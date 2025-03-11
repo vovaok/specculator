@@ -3,16 +3,20 @@
 
 #include <cstdint>
 #include <functional>
+#include <QString>
 
 class Z80
 {
 public:
     Z80(void *memory);
 
-    void reset();
-    void irq(int N);
-
+    void reset();    
     void step();
+
+    void nmi();
+    void irq(uint8_t data);
+
+    std::function<void(uint16_t addr, uint8_t &data, bool wr)> ioreq;
 
 private:
 public:
@@ -49,45 +53,59 @@ public:
     uint8_t I;
     uint8_t R;
 
-    bool IFF1, IFF2;
+    bool IFF1, IFF2; // interrupt flags
+    uint8_t IM; // interrupt mode
 
     bool halt;
+    int enable_interrupt = 0;
     int T = 0; // cycles
 
     void exec(uint8_t opcode);
-    void execCB(uint8_t opcode);
-    void execDD(uint8_t opcode);
-    void execED(uint8_t opcode);
-    void execFD(uint8_t opcode);
+    void execCB();
+    void execED();
 
     uint8_t *mem = nullptr;
 
-    void wr(uint16_t addr, uint8_t value) {mem[addr] = value; T += 3;}
-    uint8_t rd(uint16_t addr) {return mem[addr]; T += 3;}
+    void wr(uint16_t addr, uint8_t value);
+    uint8_t rd(uint16_t addr);
     uint8_t fetchByte();
     uint16_t readWord();
-
     void out(uint16_t addr, uint8_t data);
     uint8_t in(uint16_t addr);
+    uint8_t in(); // IN r,(BC)
 
+    uint8_t prefix = 0x00;
+    uint16_t pointer();
+
+    void push(uint16_t v);
+    uint16_t pop();
+    void call(uint16_t addr);
+    void ret();
+
+    // ALU
     uint8_t inc(uint8_t v);
     uint8_t dec(uint8_t v);
-    uint8_t add(uint8_t v);
-    uint8_t adc(uint8_t v);
-    uint8_t sub(uint8_t v, uint8_t c=0);
-    void cp(uint8_t v);
-    uint16_t add16(uint16_t v1, uint16_t v2);
-    uint16_t adc16(uint16_t v1, uint16_t v2, uint8_t c);
-    uint16_t sub16(uint16_t v1, uint16_t v2, uint8_t c);
+    void add(uint8_t v);
+    void adc(uint8_t v);
+    void sub(uint8_t v);
+    void sbc(uint8_t v);
     void and_(uint8_t v);
     void or_(uint8_t v);
     void xor_(uint8_t v);
+    void cp(uint8_t v);
+    uint16_t add16(uint16_t v1, uint16_t v2);
+    uint16_t adc16(uint16_t v1, uint16_t v2);
+//    uint16_t sub16(uint16_t v1, uint16_t v2);
+    uint16_t sbc16(uint16_t v1, uint16_t v2);
+    void rrd();
+    void rld();
     void rlca();
     void rrca();
     void rla();
     void rra();
     void daa();
     void cpl();
+    void neg();
     uint8_t rlc(uint8_t v);
     uint8_t rrc(uint8_t v);
     uint8_t rl(uint8_t v);
@@ -97,35 +115,30 @@ public:
     uint8_t sll(uint8_t v);
     uint8_t srl(uint8_t v);
 
+    // block commands
+    void ldi();
+    void ldd();
+    void cpi();
+    void cpd();
+    void ini();
+    void ind();
+    void outi();
+    void outd();
 
-    void push(uint16_t v);
-    uint16_t pop();
-    void call(uint16_t addr);
-    void ret();
 
     void sleepCycles(int n);
 
-    union
+    inline static bool parity(uint8_t v)
     {
-        uint16_t tmpw;
-        struct
-        {
-            uint8_t ltw;
-            uint8_t htw;
-        };
-    };
+        return ((0x9669 >> ((v ^ (v >> 4)) & 0xF)) & 1);
+    }
 
-//    struct OpCode
-//    {
-//        int T; // cycle count
-//        std::function<void(void)> exec;
-//    };
+    QString hex(uint8_t v);
+    QString hex(uint16_t v);
+    QString flagString();
+    void dump();
 
-//    OpCode opcodeSet[256]; // common set
-//    OpCode opcodeSetCB[256]; // bitwise ops
-//    OpCode opcodeSetED[256]; // extended ops
-//    OpCode opcodeSetDD[256]; // ops with IX
-//    OpCode opcodeSetFD[256]; // ops with IY
+    uint16_t lastPC = 0;
 
     void test();
 };

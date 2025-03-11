@@ -8,11 +8,19 @@ CONFIG += c++17
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+win32: {
+    DESTDIR = $$PWD/$$TARGET
+    CONFIG(release,debug|release) {
+        QMAKE_POST_LINK += windeployqt --no-translations $$DESTDIR
+    }
+}
+
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
     z80.cpp \
-    z80_alu.cpp
+    z80_alu.cpp \
+    z80_blockcmd.cpp
 
 HEADERS += \
     mainwindow.h \
