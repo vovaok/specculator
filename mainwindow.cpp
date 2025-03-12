@@ -78,6 +78,7 @@ MainWindow::MainWindow(QWidget *parent)
     timer->start(16);
 
     reset();
+    run();
 }
 
 MainWindow::~MainWindow()
