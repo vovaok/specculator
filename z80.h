@@ -10,8 +10,8 @@ class Z80
 public:
     Z80(void *memory);
 
-    void reset();    
-    void step();
+    void reset();
+    void step(bool force = false);
 
     void nmi();
     void irq(uint8_t data);
@@ -65,6 +65,8 @@ public:
     void execED();
 
     uint8_t *mem = nullptr;
+
+    uint16_t bkpt = 0;
 
     void wr(uint16_t addr, uint8_t value);
     uint8_t rd(uint16_t addr);

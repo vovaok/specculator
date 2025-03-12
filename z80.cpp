@@ -81,7 +81,7 @@ void Z80::irq(uint8_t data)
 
 }
 
-void Z80::step()
+void Z80::step(bool force)
 {
     if (PC > 0x4000 && lastPC != PC)
     {
@@ -91,8 +91,11 @@ void Z80::step()
 
     lastPC = PC;
 
+    if (bkpt && bkpt == PC)
+        halt = true;
+
     uint8_t opcode = 0;
-    if (!halt)
+    if (!halt || force)
         opcode = fetchByte();
 
     exec(opcode);

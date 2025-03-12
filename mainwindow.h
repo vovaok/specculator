@@ -23,6 +23,21 @@ public:
         m_attributes = reinterpret_cast<ZxScreenAttr*>(m_data + 6144);
     }
 
+    constexpr static uint32_t zxColor(int col, int br)
+    {
+        switch (col)
+        {
+        case 0: return br? 0xff000000: 0xff000000;
+        case 1: return br? 0xff0000ff: 0xff0000c0;
+        case 2: return br? 0xffff0000: 0xffc00000;
+        case 3: return br? 0xffff00ff: 0xffc000c0;
+        case 4: return br? 0xff00ff00: 0xff00c000;
+        case 5: return br? 0xff00ffff: 0xff00c0c0;
+        case 6: return br? 0xffffff00: 0xffc0c000;
+        case 7: return br? 0xffffffff: 0xffc0c0c0;
+        }
+    }
+
     uint32_t getPixel(int x, int y)
     {
         int bt = 32*(8*(y%8)+(y%64)/8+y/64*64)+x/8;
@@ -38,7 +53,7 @@ public:
             col = zxColor(attr.ink, attr.bright);
         else
             col = zxColor(attr.paper, attr.bright);
-        col |= 0xff000000;
+//        col |= 0xff000000;
         //        col += 0xff000000 * attr.flash;
 
         return col;
@@ -64,21 +79,6 @@ private:
     //    uint8_t data[6912];
     uint8_t *m_data = nullptr;
     ZxScreenAttr *m_attributes = nullptr;
-
-    uint32_t zxColor(int col, int br)
-    {
-        switch (col)
-        {
-        case 0: return br? 0x00000000: 0x00000000;
-        case 1: return br? 0x000000ff: 0x000000c0;
-        case 2: return br? 0x00ff0000: 0x00c00000;
-        case 3: return br? 0x00ff00ff: 0x00c000c0;
-        case 4: return br? 0x0000ff00: 0x0000c000;
-        case 5: return br? 0x0000ffff: 0x0000c0c0;
-        case 6: return br? 0x00ffff00: 0x00c0c000;
-        case 7: return br? 0x00ffffff: 0x00c0c0c0;
-        }
-    }
 };
 
 class MainWindow : public QMainWindow
@@ -101,12 +101,23 @@ public:
     QElapsedTimer etimer;
     double perf;
 
+    uint8_t port254;
+
+    QImage frm;
+    uint32_t *videoptr;
+
     void reset();
     void step();
     void run();
 
     void updateRegs();
     void updateScreen();
+
+protected:
+    void keyPressEvent(QKeyEvent *e) override;
+    void keyReleaseEvent(QKeyEvent *e) override;
+
+    QMap<int, bool> m_keysPressed;
 };
 
 #endif // MAINWINDOW_H
