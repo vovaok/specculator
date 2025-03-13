@@ -208,7 +208,7 @@ void Z80::exec(uint8_t opcode)
         OP(43, 4,   B = E);
         OP(44, 4,   B = H);
         OP(45, 4,   B = L);
-        OP(46, 4,   addr = pointer(); B = rd(pointer()));
+        OP(46, 4,   addr = pointer(); B = rd(addr));
         OP(47, 4,   B = A);
         OP(48, 4,   C = B);
         OP(49, 4,   C = C);
@@ -338,7 +338,7 @@ void Z80::exec(uint8_t opcode)
         OP(BE, 4,   addr = pointer(); cp(rd(addr)));
         OP(BF, 4,   cp(A));
 
-        OP(C0, 5,   if (flags.Z) ret());
+        OP(C0, 5,   if (!flags.Z) ret());
         OP(C1, 4,   BC = pop());
         OP(C2, 4,   addr = readWord(); if (!flags.Z) PC = addr;);
         OP(C3, 4,   addr = readWord(); PC = addr;);
@@ -418,8 +418,7 @@ void Z80::exec(uint8_t opcode)
 
 void Z80::execCB()
 {
-    bool memrd = false;
-    bool memwr = false;
+    bool mem_operand = false;
     uint8_t tmp;
     uint8_t *r = &tmp;
 
@@ -430,9 +429,12 @@ void Z80::execCB()
 
     switch (prefix)
     {
+    case 0x00:
+        prefix = 0xCB;
+        break;
     case 0xDD:
     case 0xFD:
-        memrd = true;
+        mem_operand = true;
     }
 
     switch (opcode & 7)
@@ -443,13 +445,11 @@ void Z80::execCB()
     case 3: r = &E; break;
     case 4: r = &H; break;
     case 5: r = &L; break;
-    case 6: memrd = true; break;
+    case 6: mem_operand = true; break;
     case 7: r = &A; break;
     }
 
-    memwr = memrd;
-
-    if (memrd)
+    if (mem_operand)
     {
         tmp = rd(addr);
         T++;
@@ -476,7 +476,6 @@ void Z80::execCB()
         break;
 
     case 0x40:
-        memwr = false;
         tmp = tmp & (1 << bit);
         if (mem)
             F = (F & 1) | ((addr >> 8) & 0x28);
@@ -484,13 +483,13 @@ void Z80::execCB()
             F = (F & 1) | (tmp & 0xA8);
         flags.Z = flags.P = !tmp;
         flags.H = 1;
-        break;
+        return;
 
     case 0x80: tmp &= ~(1 << bit); break;
     case 0xC0: tmp |= (1 << bit); break;
     }
 
-    if (memwr)
+    if (mem_operand)
         wr(addr, tmp);
     *r = tmp;
 }

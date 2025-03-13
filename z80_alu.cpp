@@ -16,7 +16,7 @@ uint8_t Z80::dec(uint8_t v)
 {
     flags.H = !(v & 0x0f);
     v--;
-    F = (F & 0x09) | (v & 0xA8);
+    F = (F & 0x11) | (v & 0xA8);
     flags.Z = !v;
     flags.N = 1;
     flags.P = !!(v == 0x7f);

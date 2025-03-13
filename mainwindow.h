@@ -101,7 +101,26 @@ public:
     QElapsedTimer etimer;
     double perf;
 
-    uint8_t port254;
+    constexpr static int cpuFreq = 3500000;
+    constexpr static int videoFreq = 7375000;
+    constexpr static int cyclesPerFrame = cpuFreq / 25;
+    constexpr static int cyclesPerLine = cyclesPerFrame / 625;
+    constexpr static int cyclesHSync = cyclesPerLine * 4 / 64;
+    constexpr static int cyclesBackPorch = cyclesPerLine * 8 / 64;
+    constexpr static int lineStartT = cyclesHSync + cyclesBackPorch;
+
+    union
+    {
+        uint8_t port254;
+        struct
+        {
+            uint8_t borderR: 1;
+            uint8_t borderG: 1;
+            uint8_t borderB: 1;
+            uint8_t tape: 1;
+            uint8_t beep: 1;
+        };
+    };
 
     QImage frm;
     uint32_t *videoptr;
@@ -113,11 +132,15 @@ public:
     void updateRegs();
     void updateScreen();
 
+    void doStep();
+
 protected:
     void keyPressEvent(QKeyEvent *e) override;
     void keyReleaseEvent(QKeyEvent *e) override;
 
     QMap<int, bool> m_keysPressed;
+
+    uint8_t readKeys(uint8_t addr);
 };
 
 #endif // MAINWINDOW_H

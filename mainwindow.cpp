@@ -10,30 +10,29 @@ MainWindow::MainWindow(QWidget *parent)
 {
     cpu = new Z80(mem);
     cpu->ioreq = [=](uint16_t addr, uint8_t &data, bool wr){
+        uint8_t port = addr & 0xFF;
         if (wr)
         {
-            qDebug() << "WR" << Qt::hex << addr << "<-" << data;
-            if ((addr & 0xFF) == 0xFE)
+            if (port == 0xFE)
             {
                 port254 = data;
             }
             else
             {
-
+                qDebug() << "WR" << Qt::hex << addr << "<-" << data;
             }
         }
         else
         {
-            if (addr == 0xFEFE)
+            if (port == 0xFE)
             {
-                data = 0xFF;
-//                static uint8_t jojo = 0;
-//                if (m_keysPressed.size())
-//                    data = jojo++;//m_keysPressed.firstKey();
-//                else
-//                    data = 0;
+                data = readKeys(addr >> 8);
+//                data.bit6 = mafon;
             }
-            qDebug() << "RD" << Qt::hex << addr << "->" << data;
+            else
+            {
+                qDebug() << "RD" << Qt::hex << addr << "->" << data;
+            }
         }
     };
 
@@ -69,6 +68,9 @@ MainWindow::MainWindow(QWidget *parent)
     toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
     toolbar->addAction("nmi", [=](){cpu->nmi();});
     toolbar->addAction("int", [=](){cpu->irq(0);});
+    toolbar->addAction("testSAVE", [=](){cpu->call(1218);}); // SAVE
+    toolbar->addAction("testLOAD", [=](){cpu->call(0x05E7);}); // LOAD
+    toolbar->addAction("testBEEP", [=](){cpu->call(949);}); // BEEP
 
     toolbar->addWidget(bkptEdit);
 
@@ -127,9 +129,12 @@ void MainWindow::reset()
 void MainWindow::step()
 {
     m_running = false;
-    cpu->halt = false;
-    cpu->step(true);
-    updateRegs();
+
+    doStep();
+
+    cpu->halt = true;
+
+//    updateRegs();
 }
 
 void MainWindow::run()
@@ -164,20 +169,13 @@ void MainWindow::updateRegs()
 void MainWindow::updateScreen()
 {
     bool ok;
-    cpu->bkpt = bkptEdit->text().toInt(&ok, 16);
+    uint16_t bkpt = bkptEdit->text().toInt(&ok, 16);
+//    cpu->bkpt = bkptEdit->text().toInt(&ok, 16);
 
     // hor line 64us - visual 52us
     // 625 lines per frame interlaced
 
-    constexpr int cpuFreq = 3500000;
-    constexpr int videoFreq = 7375000;
-    constexpr int cyclesPerFrame = cpuFreq / 25;
-    constexpr int cyclesPerLine = cyclesPerFrame / 625;
-    constexpr int cyclesHSync = cyclesPerLine * 4 / 64;
-    constexpr int cyclesBackPorch = cyclesPerLine * 8 / 64;
-    constexpr int lineStartT = cyclesHSync + cyclesBackPorch;
-    uint32_t *scrBuf = reinterpret_cast<uint32_t*>(frm.bits());
-    videoptr = scrBuf;
+    cpu->irq(0);
 
     QElapsedTimer perftimer;
     if (etimer.isValid())
@@ -191,26 +189,33 @@ void MainWindow::updateScreen()
         {
             while (cpu->T < endT)
             {
-                cpu->step();
+                if (bkpt && cpu->PC == bkpt)
+                    cpu->halt = true;
+                else
+                    doStep();
 
-                int frame_T = cpu->T % (cyclesPerFrame);
-                int frame_line = frame_T / cyclesPerLine + 1; // [1 ... 625]
-                if (frame_line > 312)
-                    frame_line -= 312;
-                int frm_y = frame_line - 6 - 32;
-                if (frm_y >= 0 && frm_y < 240)
-                {
-                    int line_T = frame_T % cyclesPerLine;
-                    int frm_x = (line_T - lineStartT) * videoFreq / cpuFreq - 40;
-                    if (frm_x >= 0)
-                    {
-                        if (frm_x >= 320)
-                            frm_x = 319;
-                        uint32_t *last = scrBuf + frm_y*320 + frm_x;
-                        while (videoptr < last)
-                            *videoptr++ = ZxScreen::zxColor(port254 & 7, 0);
-                    }
-                }
+//                cpu->step();
+
+//                int frame_T = cpu->T % (cyclesPerFrame);
+//                int frame_line = frame_T / cyclesPerLine + 1; // [1 ... 625]
+//                if (frame_line > 312)
+//                    frame_line -= 312;
+//                int frm_y = frame_line - 6 - 32;
+//                if (frm_y >= 0 && frm_y < 240)
+//                {
+//                    int line_T = frame_T % cyclesPerLine;
+//                    int frm_x = (line_T - lineStartT) * videoFreq / cpuFreq - 40;
+//                    if (frm_x >= 0)
+//                    {
+//                        if (frm_x > 320)
+//                            frm_x = 320;
+//                        uint32_t *last = scrBuf + frm_y*320 + frm_x;
+//                        while (videoptr < last)
+//                            *videoptr++ = ZxScreen::zxColor(port254 & 7, 0);
+//                        if (videoptr >= end)
+//                            videoptr = scrBuf;
+//                    }
+//                }
 
                 if (cpu->halt)
                 {
@@ -240,16 +245,121 @@ void MainWindow::updateScreen()
     status->setNum(perf);
 }
 
+void MainWindow::doStep()
+{
+    uint32_t *scrBuf = reinterpret_cast<uint32_t*>(frm.bits());
+    uint32_t *end = scrBuf + 320*240;
+
+    cpu->halt = false;
+    cpu->step();
+
+    int frame_T = cpu->T % (cyclesPerFrame);
+    int frame_line = frame_T / cyclesPerLine + 1; // [1 ... 625]
+    if (frame_line > 312)
+        frame_line -= 312;
+    int frm_y = frame_line - 6 - 32;
+    if (frm_y >= 0 && frm_y < 240)
+    {
+        int line_T = frame_T % cyclesPerLine;
+        int frm_x = (line_T - lineStartT) * videoFreq / cpuFreq - 40;
+        if (frm_x >= 0)
+        {
+            if (frm_x > 320)
+                frm_x = 320;
+            uint32_t *last = scrBuf + frm_y*320 + frm_x;
+            while (videoptr < last)
+                *videoptr++ = ZxScreen::zxColor(port254 & 7, 0);
+            if (videoptr >= end)
+                videoptr = scrBuf;
+        }
+    }
+}
+
 void MainWindow::keyPressEvent(QKeyEvent *e)
 {
     int key = e->key();
     m_keysPressed[key] = true;
-    cpu->irq(0);
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent *e)
 {
     int key = e->key();
-    m_keysPressed.remove(key);
-    cpu->irq(0);
+    m_keysPressed[key] = false;
+}
+
+uint8_t MainWindow::readKeys(uint8_t addr)
+{
+    union
+    {
+        uint8_t r = 0xFF;
+        struct
+        {
+            uint8_t d0: 1;
+            uint8_t d1: 1;
+            uint8_t d2: 1;
+            uint8_t d3: 1;
+            uint8_t d4: 1;
+        } bits;
+    };
+
+    switch (addr)
+    {
+    case 0xFE:
+        bits.d0 = !m_keysPressed[Qt::Key_Shift];
+        bits.d1 = !m_keysPressed[Qt::Key_Z];
+        bits.d2 = !m_keysPressed[Qt::Key_X];
+        bits.d3 = !m_keysPressed[Qt::Key_C];
+        bits.d4 = !m_keysPressed[Qt::Key_V];
+        break;
+    case 0xFD:
+        bits.d0 = !m_keysPressed[Qt::Key_A];
+        bits.d1 = !m_keysPressed[Qt::Key_S];
+        bits.d2 = !m_keysPressed[Qt::Key_D];
+        bits.d3 = !m_keysPressed[Qt::Key_F];
+        bits.d4 = !m_keysPressed[Qt::Key_G];
+        break;
+    case 0xFB:
+        bits.d0 = !m_keysPressed[Qt::Key_Q];
+        bits.d1 = !m_keysPressed[Qt::Key_W];
+        bits.d2 = !m_keysPressed[Qt::Key_E];
+        bits.d3 = !m_keysPressed[Qt::Key_R];
+        bits.d4 = !m_keysPressed[Qt::Key_T];
+        break;
+    case 0xF7:
+        bits.d0 = !m_keysPressed[Qt::Key_1];
+        bits.d1 = !m_keysPressed[Qt::Key_2];
+        bits.d2 = !m_keysPressed[Qt::Key_3];
+        bits.d3 = !m_keysPressed[Qt::Key_4];
+        bits.d4 = !m_keysPressed[Qt::Key_5];
+        break;
+    case 0xEF:
+        bits.d0 = !m_keysPressed[Qt::Key_0];
+        bits.d1 = !m_keysPressed[Qt::Key_9];
+        bits.d2 = !m_keysPressed[Qt::Key_8];
+        bits.d3 = !m_keysPressed[Qt::Key_7];
+        bits.d4 = !m_keysPressed[Qt::Key_6];
+        break;
+    case 0xDF:
+        bits.d0 = !m_keysPressed[Qt::Key_P];
+        bits.d1 = !m_keysPressed[Qt::Key_O];
+        bits.d2 = !m_keysPressed[Qt::Key_I];
+        bits.d3 = !m_keysPressed[Qt::Key_U];
+        bits.d4 = !m_keysPressed[Qt::Key_Y];
+        break;
+    case 0xBF:
+        bits.d0 = !(m_keysPressed[Qt::Key_Return] || m_keysPressed[Qt::Key_Enter]);
+        bits.d1 = !m_keysPressed[Qt::Key_L];
+        bits.d2 = !m_keysPressed[Qt::Key_K];
+        bits.d3 = !m_keysPressed[Qt::Key_J];
+        bits.d4 = !m_keysPressed[Qt::Key_H];
+        break;
+    case 0x7F:
+        bits.d0 = !m_keysPressed[Qt::Key_Space];
+        bits.d1 = !m_keysPressed[Qt::Key_Control];
+        bits.d2 = !m_keysPressed[Qt::Key_M];
+        bits.d3 = !m_keysPressed[Qt::Key_N];
+        bits.d4 = !m_keysPressed[Qt::Key_B];
+        break;
+    }
+    return r;
 }
