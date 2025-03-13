@@ -107,7 +107,7 @@ void Z80::step(bool force)
             IFF1 = IFF2 = 1;
     }
 
-    sleepCycles(T);
+//    sleepCycles(T);
     //    T = 0;
 }
 
@@ -259,7 +259,7 @@ void Z80::exec(uint8_t opcode)
         OP(73, 4,   addr = pointer(); wr(addr, E));
         OP(74, 4,   addr = pointer(); wr(addr, this->H));
         OP(75, 4,   addr = pointer(); wr(addr, this->L));
-        OP(76, 4,   halt = 1; PC--); // why PC--?
+        OP(76, 4,   halt = 1; /*PC--*/); // why PC--?
         OP(77, 4,   addr = pointer(); wr(addr, A));
         OP(78, 4,   A = B);
         OP(79, 4,   A = C);
@@ -608,7 +608,7 @@ void Z80::wr(uint16_t addr, uint8_t value)
     }
     else
     {
-        halt = 1;
+//        halt = 1;
         qDebug() << "WARNING! memory write attempt @" << addr;
         dump();
     }

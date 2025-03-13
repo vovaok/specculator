@@ -175,7 +175,9 @@ void MainWindow::updateScreen()
     // hor line 64us - visual 52us
     // 625 lines per frame interlaced
 
-    cpu->irq(0);
+    // generate interrupt
+    if (m_running)
+        cpu->irq(0);
 
     QElapsedTimer perftimer;
     if (etimer.isValid())
@@ -191,37 +193,11 @@ void MainWindow::updateScreen()
             {
                 if (bkpt && cpu->PC == bkpt)
                     cpu->halt = true;
-                else
-                    doStep();
-
-//                cpu->step();
-
-//                int frame_T = cpu->T % (cyclesPerFrame);
-//                int frame_line = frame_T / cyclesPerLine + 1; // [1 ... 625]
-//                if (frame_line > 312)
-//                    frame_line -= 312;
-//                int frm_y = frame_line - 6 - 32;
-//                if (frm_y >= 0 && frm_y < 240)
-//                {
-//                    int line_T = frame_T % cyclesPerLine;
-//                    int frm_x = (line_T - lineStartT) * videoFreq / cpuFreq - 40;
-//                    if (frm_x >= 0)
-//                    {
-//                        if (frm_x > 320)
-//                            frm_x = 320;
-//                        uint32_t *last = scrBuf + frm_y*320 + frm_x;
-//                        while (videoptr < last)
-//                            *videoptr++ = ZxScreen::zxColor(port254 & 7, 0);
-//                        if (videoptr >= end)
-//                            videoptr = scrBuf;
-//                    }
-//                }
 
                 if (cpu->halt)
-                {
-                    m_running = false;
                     break;
-                }
+
+                doStep();
             }
         }
         qint64 run_ns = perftimer.nsecsElapsed();
@@ -278,6 +254,7 @@ void MainWindow::doStep()
 void MainWindow::keyPressEvent(QKeyEvent *e)
 {
     int key = e->key();
+    qDebug() << key;
     m_keysPressed[key] = true;
 }
 
