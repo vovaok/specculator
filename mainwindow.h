@@ -48,11 +48,15 @@ public:
         //        int pixel = (byte % int(pow(2, (bit+1)))) / int(pow(2, bit));
         bool pixel = byte & (1 << bit);
 
+        uint8_t ink = attr.ink;
+        uint8_t paper = attr.paper;
         uint32_t col;
+        if (attr.flash && flash)
+            std::swap(ink, paper);
         if (pixel)
-            col = zxColor(attr.ink, attr.bright);
+            col = zxColor(ink, attr.bright);
         else
-            col = zxColor(attr.paper, attr.bright);
+            col = zxColor(paper, attr.bright);
 //        col |= 0xff000000;
         //        col += 0xff000000 * attr.flash;
 
@@ -72,6 +76,8 @@ public:
         return img;
     }
 
+    bool flash = false;
+
     //    void setPixel(int x, int y, uint8_t attr);
     //    void resetPixel(int x, int y, uint8_t attr);
 
@@ -89,7 +95,7 @@ public:
     ~MainWindow();
 
     Z80 *cpu = nullptr;
-    uint8_t mem[0x10000];
+//    uint8_t mem[0x10000];
     ZxScreen *scr;
 
     bool m_running = false;
@@ -183,7 +189,7 @@ protected:
     };
 
     QMap<int, int> m_keysPressed;
-    uint8_t m_keyport[8] {0};
+//    uint8_t m_keyport[8] {0};
     QMap<int, QVector<ZxKeyCode>> m_keyMap;
 
     void updateKeyboard();

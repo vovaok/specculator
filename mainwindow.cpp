@@ -3,6 +3,10 @@
 #include <chrono>
 #include <QElapsedTimer>
 
+uint8_t mem[0x10000];
+extern uint8_t mem2[0x10000];
+uint8_t m_keyport[8] {0};
+
 using namespace std::literals;
 
 MainWindow::MainWindow(QWidget *parent)
@@ -35,7 +39,6 @@ MainWindow::MainWindow(QWidget *parent)
             }
         }
     };
-
 
     m_keyMap['1']   = {Key_1};
     m_keyMap['2']   = {Key_2};
@@ -84,6 +87,17 @@ MainWindow::MainWindow(QWidget *parent)
     m_keyMap[39]    = {Key_CS, Key_8}; // arrow right
     m_keyMap[40]    = {Key_CS, Key_6}; // arrow down
     m_keyMap[19]    = {Key_CS, Key_Space}; // break
+    m_keyMap[189]   = {Key_SS, Key_J}; // minus
+    m_keyMap[187]   = {Key_SS, Key_L}; // equal
+    m_keyMap[219]   = {Key_SS, Key_8}; // left bracket (parenthesis)
+    m_keyMap[221]   = {Key_SS, Key_9}; // right bracket (parenthesis)
+    m_keyMap[186]   = {Key_SS, Key_O}; // semicolon
+    m_keyMap[222]   = {Key_SS, Key_P}; // quote
+    m_keyMap[220]   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
+    m_keyMap[226]   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
+    m_keyMap[188]   = {Key_SS, Key_N}; // comma
+    m_keyMap[190]   = {Key_SS, Key_M}; // dot
+    m_keyMap[191]   = {Key_SS, Key_V}; // slash
 
 
     QFile f("1982.rom");
@@ -108,14 +122,15 @@ MainWindow::MainWindow(QWidget *parent)
     bkptEdit = new QLineEdit(0);
     bkptEdit->setFixedWidth(64);
     bkptEdit->setFont(QFont("Consolas"));
-//    cpu->test();
+
+    cpu->test();
 
     QToolBar *toolbar = addToolBar("main");
     toolbar->addAction("reset", this, &MainWindow::reset)->setShortcut(QKeySequence("F2"));
     toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
     toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
     toolbar->addAction("nmi", [=](){cpu->nmi();});
-    toolbar->addAction("int", [=](){cpu->irq(0);});
+    toolbar->addAction("int", [=](){cpu->irq();});
     toolbar->addAction("testSAVE", [=](){cpu->call(1218);}); // SAVE
     toolbar->addAction("testLOAD", [=](){cpu->call(0x05E7);}); // LOAD
     toolbar->addAction("testBEEP", [=](){cpu->call(949);}); // BEEP
@@ -178,8 +193,8 @@ void MainWindow::step()
 {
     m_running = false;
 
+    cpu->halt = false;
     doStep();
-
     cpu->halt = true;
 
 //    updateRegs();
@@ -214,6 +229,8 @@ void MainWindow::updateRegs()
     regEdits["T"]->setText(QString::number(cpu->T));
 }
 
+
+
 void MainWindow::updateScreen()
 {
     bool ok;
@@ -225,7 +242,7 @@ void MainWindow::updateScreen()
 
     // generate interrupt
     if (m_running)
-        cpu->irq(0);
+        cpu->irq();
 
     QElapsedTimer perftimer;
     if (etimer.isValid())
@@ -233,7 +250,7 @@ void MainWindow::updateScreen()
         qint64 frame_ns = etimer.nsecsElapsed();
         int N = frame_ns * cpuFreq / 1000000000;
         etimer.start();
-        int endT = cpu->T + N;
+        qint64 endT = cpu->T + N;
         perftimer.start();
         if (m_running)
         {
@@ -241,9 +258,6 @@ void MainWindow::updateScreen()
             {
                 if (bkpt && cpu->PC == bkpt)
                     cpu->halt = true;
-
-                if (cpu->halt)
-                    break;
 
                 doStep();
             }
@@ -258,6 +272,14 @@ void MainWindow::updateScreen()
 
     updateRegs();
 
+//    for (int i= 0x4000; i<0x10000; i++)
+//    {
+//        if (mem[i] != mem2[i])
+//        {
+//            qDebug() << Qt::hex << "CARAMBA! mem @ " << i << ":" << mem[i] << mem2[i];
+//            m_running = false;
+//        }
+//    }
 
 
     QImage img = scr->toImage();
@@ -274,8 +296,9 @@ void MainWindow::doStep()
     uint32_t *scrBuf = reinterpret_cast<uint32_t*>(frm.bits());
     uint32_t *end = scrBuf + 320*240;
 
-    cpu->halt = false;
     cpu->step();
+
+    scr->flash = (cpu->T / (cpuFreq / 3)) & 1;
 
     int frame_T = cpu->T % (cyclesPerFrame);
     int frame_line = frame_T / cyclesPerLine + 1; // [1 ... 625]
@@ -301,16 +324,21 @@ void MainWindow::doStep()
 
 void MainWindow::keyPressEvent(QKeyEvent *e)
 {
+    if (e->isAutoRepeat())
+        return;
     int key = e->nativeVirtualKey();
-    qDebug() << e->nativeScanCode() << e->nativeVirtualKey();
+//    qDebug() << e->nativeVirtualKey();
     m_keysPressed[key] = key;
     updateKeyboard();
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent *e)
 {
+    if (e->isAutoRepeat())
+        return;
     int key = e->nativeVirtualKey();
     m_keysPressed.remove(key);
+//    qDebug() << "release" << key;
     updateKeyboard();
 }
 
@@ -336,80 +364,4 @@ uint8_t MainWindow::readKeys(uint8_t addr)
         if (!(addr & (1 << idx)))
             return ~m_keyport[idx];
     return 0xFF;
-
-//    union
-//    {
-//        uint8_t r = 0xFF;
-//        struct
-//        {
-//            uint8_t d0: 1;
-//            uint8_t d1: 1;
-//            uint8_t d2: 1;
-//            uint8_t d3: 1;
-//            uint8_t d4: 1;
-//        } bits;
-//    };
-
-
-
-//    switch (addr)
-//    {
-//    case 0xFE:
-//        bits.d0 = !m_keysPressed[Qt::Key_Shift];
-//        bits.d1 = !m_keysPressed[Qt::Key_Z];
-//        bits.d2 = !m_keysPressed[Qt::Key_X];
-//        bits.d3 = !m_keysPressed[Qt::Key_C];
-//        bits.d4 = !m_keysPressed[Qt::Key_V];
-//        break;
-//    case 0xFD:
-//        bits.d0 = !m_keysPressed[Qt::Key_A];
-//        bits.d1 = !m_keysPressed[Qt::Key_S];
-//        bits.d2 = !m_keysPressed[Qt::Key_D];
-//        bits.d3 = !m_keysPressed[Qt::Key_F];
-//        bits.d4 = !m_keysPressed[Qt::Key_G];
-//        break;
-//    case 0xFB:
-//        bits.d0 = !m_keysPressed[Qt::Key_Q];
-//        bits.d1 = !m_keysPressed[Qt::Key_W];
-//        bits.d2 = !m_keysPressed[Qt::Key_E];
-//        bits.d3 = !m_keysPressed[Qt::Key_R];
-//        bits.d4 = !m_keysPressed[Qt::Key_T];
-//        break;
-//    case 0xF7:
-//        bits.d0 = !m_keysPressed[Qt::Key_1];
-//        bits.d1 = !m_keysPressed[Qt::Key_2];
-//        bits.d2 = !m_keysPressed[Qt::Key_3];
-//        bits.d3 = !m_keysPressed[Qt::Key_4];
-//        bits.d4 = !m_keysPressed[Qt::Key_5];
-//        break;
-//    case 0xEF:
-//        bits.d0 = !m_keysPressed[Qt::Key_0];
-//        bits.d1 = !m_keysPressed[Qt::Key_9];
-//        bits.d2 = !m_keysPressed[Qt::Key_8];
-//        bits.d3 = !m_keysPressed[Qt::Key_7];
-//        bits.d4 = !m_keysPressed[Qt::Key_6];
-//        break;
-//    case 0xDF:
-//        bits.d0 = !m_keysPressed[Qt::Key_P];
-//        bits.d1 = !m_keysPressed[Qt::Key_O];
-//        bits.d2 = !m_keysPressed[Qt::Key_I];
-//        bits.d3 = !m_keysPressed[Qt::Key_U];
-//        bits.d4 = !m_keysPressed[Qt::Key_Y];
-//        break;
-//    case 0xBF:
-//        bits.d0 = !(m_keysPressed[Qt::Key_Return] || m_keysPressed[Qt::Key_Enter]);
-//        bits.d1 = !m_keysPressed[Qt::Key_L];
-//        bits.d2 = !m_keysPressed[Qt::Key_K];
-//        bits.d3 = !m_keysPressed[Qt::Key_J];
-//        bits.d4 = !m_keysPressed[Qt::Key_H];
-//        break;
-//    case 0x7F:
-//        bits.d0 = !m_keysPressed[Qt::Key_Space];
-//        bits.d1 = !m_keysPressed[Qt::Key_Control];
-//        bits.d2 = !m_keysPressed[Qt::Key_M];
-//        bits.d3 = !m_keysPressed[Qt::Key_N];
-//        bits.d4 = !m_keysPressed[Qt::Key_B];
-//        break;
-//    }
-//    return r;
 }

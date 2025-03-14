@@ -3,6 +3,13 @@
 #include <chrono>
 #include <QDebug>
 
+#include "cpu.h"
+
+CPU *_cpu = nullptr;
+extern uint8_t mem[0x10000];
+uint8_t mem2[0x10000];
+extern uint8_t m_keyport[8];
+
 using namespace std::literals;
 
 Z80::Z80(void *memory) :
@@ -32,6 +39,9 @@ void Z80::reset()
 
     halt = 0;
     T = 0;
+
+//    if (_cpu)
+//        z80_reset(_cpu);
 }
 
 void Z80::nmi()
@@ -42,19 +52,31 @@ void Z80::nmi()
     call(0x0066);
 }
 
-void Z80::irq(uint8_t data)
+void Z80::irq()
 {
-    if (!IFF1)
-        return;
+    _int = 1;
 
+    if (_cpu)
+    {
+        _cpu->intrq = 1;
+        _cpu->ack = 1;
+    }
+}
+
+void Z80::acceptInt()
+{
+    _int = 0;
     halt = 0;
     IFF1 = IFF2 = 0;
-//    I = data;
+    //    I = data;
 
     T += 4;
 
     uint16_t addr;
     uint8_t tmp;
+
+    if (blk)
+        F = (F & ~0x28) | ((PC >> 8) & 0x28);
 
     switch (IM)
     {
@@ -72,7 +94,7 @@ void Z80::irq(uint8_t data)
 
     case 2:
         T += 2;
-        addr = (I << 8) | data;
+        addr = (I << 8) | 0;// data;
         push(PC);
         tmp = rd(addr++);
         PC = (tmp << 8) | rd(addr);
@@ -94,11 +116,38 @@ void Z80::step(bool force)
     if (bkpt && bkpt == PC)
         halt = true;
 
-    uint8_t opcode = 0;
-    if (!halt || force)
-        opcode = fetchByte();
+    uint16_t oldAF = AF, oldBC = BC, oldHL = HL, oldDE = DE;
 
-    exec(opcode);
+    if (_cpu)
+    {
+        z80_exec(_cpu);
+        T += _cpu->t;
+    }
+
+    if (_int && IFF1)
+        acceptInt();
+    else if (!halt)
+        exec(fetchByte());
+
+    if (_cpu && !halt)
+    {
+        if (_cpu->a != A || _cpu->f != F ||
+            _cpu->bc != BC || _cpu->de != DE || _cpu->hl != HL ||
+            _cpu->ix != IX || _cpu->iy != IY)
+        {
+            qDebug() << Qt::hex << "ALARMA! PC =" << PC << " cpu->pc" << _cpu->pc << "last PC" << lastPC;
+            qDebug() << Qt::hex << "F =" << F << "; cpu->f =" << _cpu->f;
+            qDebug() << Qt::hex << "AF" << AF << ((_cpu->a << 8) | _cpu->f) << oldAF;
+            qDebug() << Qt::hex << "BC" << BC << _cpu->bc << oldDE;
+            qDebug() << Qt::hex << "DE" << DE << _cpu->de << oldDE;
+            qDebug() << Qt::hex << "HL" << HL << _cpu->hl << oldHL;
+            qDebug() << Qt::hex << "IX" << IX << _cpu->ix;
+            qDebug() << Qt::hex << "IY" << IY << _cpu->iy;
+//            dump();
+            halt = 1;
+            _cpu->halt = 1;
+        }
+    }
 
     if (enable_interrupt)
     {
@@ -295,14 +344,14 @@ void Z80::exec(uint8_t opcode)
         OP(95, 4,   sub(L));
         OP(96, 4,   addr = pointer(); sub(rd(addr)));
         OP(97, 4,   sub(A));
-        OP(98, 4,   sub(B));
-        OP(99, 4,   sub(C));
-        OP(9A, 4,   sub(D));
-        OP(9B, 4,   sub(E));
-        OP(9C, 4,   sub(H));
-        OP(9D, 4,   sub(L));
-        OP(9E, 4,   addr = pointer(); sub(rd(addr)));
-        OP(9F, 4,   sub(A));
+        OP(98, 4,   sbc(B));
+        OP(99, 4,   sbc(C));
+        OP(9A, 4,   sbc(D));
+        OP(9B, 4,   sbc(E));
+        OP(9C, 4,   sbc(H));
+        OP(9D, 4,   sbc(L));
+        OP(9E, 4,   addr = pointer(); sbc(rd(addr)));
+        OP(9F, 4,   sbc(A));
 
         OP(A0, 4,   and_(B));
         OP(A1, 4,   and_(C));
@@ -368,7 +417,7 @@ void Z80::exec(uint8_t opcode)
         OP(DA, 4,   addr = readWord(); if (flags.C) PC = addr;);
         OP(DB, 4,   addr = rd(PC++) | (A<<8); A = in(addr););
         OP(DC, 4,   addr = readWord(); if (flags.C) {T++; call(addr);});
-        OP(DD, 4,   prefix = 0xDD; exec(fetchByte()));
+        OP(DD, 4,   prefix = 0xDD; exec(fetchByte()); HL = this->HL);
         OP(DE, 4,   sbc(rd(PC++)));
         OP(DF, 5,   call(0x18)); // RST 18H
 
@@ -402,7 +451,7 @@ void Z80::exec(uint8_t opcode)
         OP(FA, 4,   addr = readWord(); if (flags.S) PC = addr;);
         OP(FB, 4,   enable_interrupt = 2); // set IFF1 = IFF2 = 1 after the next step
         OP(FC, 4,   addr = readWord(); if (flags.S) {T++; call(addr);});
-        OP(FD, 4,   prefix = 0xFD; exec(fetchByte()));
+        OP(FD, 4,   prefix = 0xFD; exec(fetchByte()); HL = this->HL);
         OP(FE, 4,   cp(rd(PC++)));
         OP(FF, 5,   call(0x38)); // RST 38H
     }
@@ -420,6 +469,7 @@ void Z80::execCB()
 {
     bool mem_operand = false;
     uint8_t tmp;
+    uint8_t hptr = PC >> 8;
     uint8_t *r = &tmp;
 
     T += 4;
@@ -435,6 +485,7 @@ void Z80::execCB()
     case 0xDD:
     case 0xFD:
         mem_operand = true;
+        hptr = addr >> 8;
     }
 
     switch (opcode & 7)
@@ -477,8 +528,8 @@ void Z80::execCB()
 
     case 0x40:
         tmp = tmp & (1 << bit);
-        if (mem)
-            F = (F & 1) | ((addr >> 8) & 0x28);
+        if (mem_operand)
+            F = (F & 1) | (hptr & 0x28) | (tmp & 0x80);
         else
             F = (F & 1) | (tmp & 0xA8);
         flags.Z = flags.P = !tmp;
@@ -582,13 +633,13 @@ void Z80::execED()
         OP(AA, 4, ind());
         OP(AB, 4, outd());
 
-        OP(B0, 4, ldi(); if (BC) {PC -= 2; T += 5;});
-        OP(B1, 4, cpi(); if (flags.P && !flags.Z) {PC -= 2; T += 5;});
+        OP(B0, 4, ldi(); if (blk = !!BC) {PC -= 2; T += 5;});
+        OP(B1, 4, cpi(); if (blk = (flags.P && !flags.Z)) {PC -= 2; T += 5;});
         OP(B2, 4, ini(); if (B) {PC -= 2; T += 5;});
         OP(B3, 4, outi(); if (B) {PC -= 2; T += 5;});
 
-        OP(B8, 4, ldd(); if (BC) {PC -= 2; T += 5;});
-        OP(B9, 4, cpd(); if (flags.P && !flags.Z) {PC -= 2; T += 5;});
+        OP(B8, 4, ldd(); if (blk = !!BC) {PC -= 2; T += 5;});
+        OP(B9, 4, cpd(); if (blk = (flags.P && !flags.Z)) {PC -= 2; T += 5;});
         OP(BA, 4, ind(); if (B) {PC -= 2; T += 5;});
         OP(BB, 4, outd(); if (B) {PC -= 2; T += 5;});
 
@@ -605,12 +656,18 @@ void Z80::wr(uint16_t addr, uint8_t value)
     {
         mem[addr] = value;
         T += 3;
+        if (mem2[addr] != value)
+        {
+            qDebug() << Qt::hex << "mem wr @" << addr << "... PC =" << lastPC;
+            halt = 1;
+            _cpu->halt = 1;
+        }
     }
     else
     {
 //        halt = 1;
-        qDebug() << "WARNING! memory write attempt @" << addr;
-        dump();
+//        qDebug() << "WARNING! memory write attempt @" << addr;
+//        dump();
     }
 }
 
@@ -732,12 +789,94 @@ void Z80::dump()
     qDebug() << "MEM:" << hex(HL) << ":" << QByteArray((const char *)mem + HL, 16).toHex(' ');
 }
 
+
+
+// memrq rd
+int _cbmr(int addr, int, void*)
+{
+    return mem2[addr & 0xFFFF];
+}
+// memrq wr
+void _cbmw(int addr, int data, void*)
+{
+    addr &= 0xFFFF;
+    if (addr >= 0x4000)
+        mem2[addr] = data;
+}
+// iorq rd
+int _cbir(int addr, void*)
+{
+    if ((addr & 0xFF) == 0xFE)
+        for (int idx=0; idx<8; idx++)
+            if (!(addr & (0x100 << idx)))
+                return ~m_keyport[idx];
+    return 0xFF;
+}
+// iorq wr
+void _cbiw(int, int, void*)
+{
+
+}
+// iorq int : interrupt vector request
+int _cbiack(void*)
+{
+
+}
+//// memrd external
+//typedef int(*cbdmr)(int, void*);
+void _cbirq(int, void*)
+{
+
+}
+
+uint32_t xptrval;
+
+void z80_daa(CPU* cpu) {
+    const unsigned char* tdaa = daaTab + 2 * (cpu->a + 0x100 * ((cpu->f & 3) + ((cpu->f >> 2) & 4)));
+    cpu->f = *tdaa;
+    cpu->a = *(tdaa + 1);
+}
+
 void Z80::test()
 {
     A = 0x23;
     B = 0xF3;
 
-    daa();
+    if (!_cpu)
+    {
+        _cpu = cpuCreate(CPU_Z80, _cbmr, _cbmw, _cbir, _cbiw, _cbiack, _cbirq, &xptrval);
+        for (int i=0; i<16384; i++)
+            mem2[i] = ::mem[i];
+//        memcpy(mem2, ::mem, sizeof(mem2));
+    }
+
+//    uint8_t r1, f1;
+//    uint8_t r2, f2;
+
+//    for (int i=0; i<255; i++)
+//    {
+//        A = i;
+//        F = 0;
+//        flags.N = 1;
+//        flags.H = 1;
+//        flags.C = 1;
+//        _cpu->a = A;
+//        _cpu->f = F;
+//        z80_daa(_cpu);
+//        r1 = _cpu->a;
+//        f1 = _cpu->f;
+
+//        daa();
+//        r2 = A;
+//        f2 = F;
+
+//        if (r1 != r2 || f1 != f2)
+//        {
+//            qDebug() << Qt::hex << "TEST ERROR @" << i<<":" << r1 << r2 << f1 << f2;
+//            break;
+//      }
+
+//    }
 
 
 //    strcpy((char*)mem+8, "preved medved!");

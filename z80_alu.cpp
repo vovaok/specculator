@@ -86,7 +86,6 @@ void Z80::or_(uint8_t v)
     A |= v;
     F = A & 0xA8;
     flags.Z = !A;
-    flags.H = 1;
     flags.P = parity(A);
 }
 
@@ -116,7 +115,7 @@ uint16_t Z80::add16(uint16_t v1, uint16_t v2)
 {
     uint32_t r = v1 + v2;
     F = (F & 0xC4) | ((r >> 8) & 0x28);
-    flags.H = ((v1 & 0x0F00) + (v2 & 0x0F00)) > 0x0FFF;
+    flags.H = ((v1 & 0x0FFF) + (v2 & 0x0FFF)) > 0x0FFF;
     flags.C = r > 0xFFFF;
     return r;
 }
@@ -127,7 +126,7 @@ uint16_t Z80::adc16(uint16_t v1, uint16_t v2)
     uint32_t r = v1 + v2 + c;
     F = (r >> 8) & 0xA8;
     flags.Z = !(r & 0xFFFF);
-    flags.H = ((v1 & 0x0F00) + (v2 & 0x0F00) + c) > 0x0FFF;
+    flags.H = ((v1 & 0x0FFF) + (v2 & 0x0FFF) + c) > 0x0FFF;
     flags.P = (uint32_t)((int16_t)v1 + (int16_t)v2 + c + 0x8000) > 0xFFFF;
     flags.C = r >> 16;
     return r;
@@ -138,7 +137,7 @@ uint16_t Z80::adc16(uint16_t v1, uint16_t v2)
 //    uint32_t r = v1 - v2;
 //    F = (r >> 8) & 0xA8;
 //    flags.Z = !(r & 0xFFFF);
-//    flags.H = (v1 & 0x0F00) < ((v2 & 0x0F00)/* + c*/);
+//    flags.H = (v1 & 0x0FFF) < ((v2 & 0x0FFF));
 //    flags.P = (uint32_t)((int16_t)v1 - (int16_t)v2 + 0x8000) > 0xFFFF;
 //    flags.N = 1;
 //    flags.C = r >> 16;
@@ -151,7 +150,7 @@ uint16_t Z80::sbc16(uint16_t v1, uint16_t v2)
     uint32_t r = v1 - v2 - c;
     F = (r >> 8) & 0xA8;
     flags.Z = !(r & 0xFFFF);
-    flags.H = (v1 & 0x0F00) < ((v2 & 0x0F00)/* + c*/);
+    flags.H = (v1 & 0x0FFF) < ((v2 & 0x0FFF) + c);
     flags.P = (uint32_t)((int16_t)v1 - (int16_t)v2 - c + 0x8000) > 0xFFFF;
     flags.N = 1;
     flags.C = r >> 16;
@@ -212,26 +211,66 @@ void Z80::rra()
 
 void Z80::daa()
 {
+    uint16_t v = A;
+    bool h = 0;
+    bool c = 0;
     if (!flags.N)
     {
-        if ((A & 0x0F) > 9 || flags.H)
-            A += 6;
-        if ((A & 0xF0) > 0x90)
-            A += 0x60;
+        if ((v & 0x0F) > 9)// || flags.H)
+        {
+            v += 0x06;
+            h = 1;
+        }
+        else if (flags.H)
+            v += 0x06;
+        if ((v & 0x1F0) > 0x90 || flags.C)
+        {
+            v += 0x60;
+            c = 1;
+        }
     }
     else
     {
-        if (flags.H)
-            A -= 6;
-        if (flags.C)
-            A -= 0x60;
+        if (v > 0x99 || flags.C)
+        {
+            v -= 0x60;
+            c = 1;
+        }
+
+        if ((v & 0x0F) > 9)
+        {
+            v -= 0x06;
+//            h = 1;
+        }
+        else if (flags.H)
+        {
+            if ((v & 0xF) < 6)
+                h = 1;
+            v -= 0x06;
+        }
+
+
     }
+    A = v;
+    F = (F & 0x02) | (A & 0xA8);
+    flags.Z = !A;
+    flags.P = parity(A);
+    flags.H = h;
+    flags.C = c;
     //! @todo test this shit and change the flags!
 }
+
+//cpu->a ^= 0xff;
+////	cpu->f = (cpu->f & (Z80_FS | Z80_FZ | Z80_FP | Z80_FC)) | (cpu->a & (Z80_F5 | Z80_F3)) | Z80_FH | Z80_FN;
+//cpu->fz.f5 = !!(cpu->a & 0x20);
+//cpu->fz.h = 1;
+//cpu->fz.f3 = !!(cpu->a & 0x08);
+//cpu->fz.n = 1;
 
 void Z80::cpl()
 {
     A = ~A;
+    F = (F & 0xC5) | (A & 0x28);
     flags.N = 1;
     flags.H = 1;
 }

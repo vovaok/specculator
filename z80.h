@@ -14,7 +14,8 @@ public:
     void step(bool force = false);
 
     void nmi();
-    void irq(uint8_t data);
+    void irq();
+    void acceptInt();
 
     std::function<void(uint16_t addr, uint8_t &data, bool wr)> ioreq;
 
@@ -57,6 +58,8 @@ public:
     uint8_t IM; // interrupt mode
 
     bool halt;
+    bool blk = false; // block operation in progress
+    bool _int = false; // interrupt request
     int enable_interrupt = 0;
     int T = 0; // cycles
 
