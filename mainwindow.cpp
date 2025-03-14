@@ -37,6 +37,54 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
 
+    m_keyMap['1']   = {Key_1};
+    m_keyMap['2']   = {Key_2};
+    m_keyMap['3']   = {Key_3};
+    m_keyMap['4']   = {Key_4};
+    m_keyMap['5']   = {Key_5};
+    m_keyMap['6']   = {Key_6};
+    m_keyMap['7']   = {Key_7};
+    m_keyMap['8']   = {Key_8};
+    m_keyMap['9']   = {Key_9};
+    m_keyMap['0']   = {Key_0};
+    m_keyMap['Q']   = {Key_Q};
+    m_keyMap['W']   = {Key_W};
+    m_keyMap['E']   = {Key_E};
+    m_keyMap['R']   = {Key_R};
+    m_keyMap['T']   = {Key_T};
+    m_keyMap['Y']   = {Key_Y};
+    m_keyMap['U']   = {Key_U};
+    m_keyMap['I']   = {Key_I};
+    m_keyMap['O']   = {Key_O};
+    m_keyMap['P']   = {Key_P};
+    m_keyMap['A']   = {Key_A};
+    m_keyMap['S']   = {Key_S};
+    m_keyMap['D']   = {Key_D};
+    m_keyMap['F']   = {Key_F};
+    m_keyMap['G']   = {Key_G};
+    m_keyMap['H']   = {Key_H};
+    m_keyMap['J']   = {Key_J};
+    m_keyMap['K']   = {Key_K};
+    m_keyMap['L']   = {Key_L};
+    m_keyMap[13]    = {Key_Enter};
+    m_keyMap[16]    = {Key_CS};
+    m_keyMap['Z']   = {Key_Z};
+    m_keyMap['X']   = {Key_X};
+    m_keyMap['C']   = {Key_C};
+    m_keyMap['V']   = {Key_V};
+    m_keyMap['B']   = {Key_B};
+    m_keyMap['N']   = {Key_N};
+    m_keyMap['M']   = {Key_M};
+    m_keyMap[17]    = {Key_SS};
+    m_keyMap[' ']   = {Key_Space};
+
+    m_keyMap[8]     = {Key_CS, Key_0}; // backspace
+    m_keyMap[37]    = {Key_CS, Key_5}; // arrow left
+    m_keyMap[38]    = {Key_CS, Key_7}; // arrow up
+    m_keyMap[39]    = {Key_CS, Key_8}; // arrow right
+    m_keyMap[40]    = {Key_CS, Key_6}; // arrow down
+    m_keyMap[19]    = {Key_CS, Key_Space}; // break
+
 
     QFile f("1982.rom");
     if (f.open(QIODevice::ReadOnly))
@@ -106,7 +154,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MainWindow::updateScreen);
-    timer->start(20);
+    timer->start(16);
 
     reset();
     run();
@@ -253,90 +301,115 @@ void MainWindow::doStep()
 
 void MainWindow::keyPressEvent(QKeyEvent *e)
 {
-    int key = e->key();
-    qDebug() << key;
-    m_keysPressed[key] = true;
+    int key = e->nativeVirtualKey();
+    qDebug() << e->nativeScanCode() << e->nativeVirtualKey();
+    m_keysPressed[key] = key;
+    updateKeyboard();
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent *e)
 {
-    int key = e->key();
-    m_keysPressed[key] = false;
+    int key = e->nativeVirtualKey();
+    m_keysPressed.remove(key);
+    updateKeyboard();
+}
+
+void MainWindow::updateKeyboard()
+{
+    for (int i=0; i<8; i++)
+        m_keyport[i] = 0;
+
+    for (int key: m_keysPressed)
+    {
+        for (ZxKeyCode zxkey: m_keyMap[key])
+        {
+            int idx = zxkey >> 5;
+            uint8_t mask = zxkey & 0x1F;
+            m_keyport[idx] |= mask;
+        }
+    }
 }
 
 uint8_t MainWindow::readKeys(uint8_t addr)
 {
-    union
-    {
-        uint8_t r = 0xFF;
-        struct
-        {
-            uint8_t d0: 1;
-            uint8_t d1: 1;
-            uint8_t d2: 1;
-            uint8_t d3: 1;
-            uint8_t d4: 1;
-        } bits;
-    };
+    for (int idx=0; idx<8; idx++)
+        if (!(addr & (1 << idx)))
+            return ~m_keyport[idx];
+    return 0xFF;
 
-    switch (addr)
-    {
-    case 0xFE:
-        bits.d0 = !m_keysPressed[Qt::Key_Shift];
-        bits.d1 = !m_keysPressed[Qt::Key_Z];
-        bits.d2 = !m_keysPressed[Qt::Key_X];
-        bits.d3 = !m_keysPressed[Qt::Key_C];
-        bits.d4 = !m_keysPressed[Qt::Key_V];
-        break;
-    case 0xFD:
-        bits.d0 = !m_keysPressed[Qt::Key_A];
-        bits.d1 = !m_keysPressed[Qt::Key_S];
-        bits.d2 = !m_keysPressed[Qt::Key_D];
-        bits.d3 = !m_keysPressed[Qt::Key_F];
-        bits.d4 = !m_keysPressed[Qt::Key_G];
-        break;
-    case 0xFB:
-        bits.d0 = !m_keysPressed[Qt::Key_Q];
-        bits.d1 = !m_keysPressed[Qt::Key_W];
-        bits.d2 = !m_keysPressed[Qt::Key_E];
-        bits.d3 = !m_keysPressed[Qt::Key_R];
-        bits.d4 = !m_keysPressed[Qt::Key_T];
-        break;
-    case 0xF7:
-        bits.d0 = !m_keysPressed[Qt::Key_1];
-        bits.d1 = !m_keysPressed[Qt::Key_2];
-        bits.d2 = !m_keysPressed[Qt::Key_3];
-        bits.d3 = !m_keysPressed[Qt::Key_4];
-        bits.d4 = !m_keysPressed[Qt::Key_5];
-        break;
-    case 0xEF:
-        bits.d0 = !m_keysPressed[Qt::Key_0];
-        bits.d1 = !m_keysPressed[Qt::Key_9];
-        bits.d2 = !m_keysPressed[Qt::Key_8];
-        bits.d3 = !m_keysPressed[Qt::Key_7];
-        bits.d4 = !m_keysPressed[Qt::Key_6];
-        break;
-    case 0xDF:
-        bits.d0 = !m_keysPressed[Qt::Key_P];
-        bits.d1 = !m_keysPressed[Qt::Key_O];
-        bits.d2 = !m_keysPressed[Qt::Key_I];
-        bits.d3 = !m_keysPressed[Qt::Key_U];
-        bits.d4 = !m_keysPressed[Qt::Key_Y];
-        break;
-    case 0xBF:
-        bits.d0 = !(m_keysPressed[Qt::Key_Return] || m_keysPressed[Qt::Key_Enter]);
-        bits.d1 = !m_keysPressed[Qt::Key_L];
-        bits.d2 = !m_keysPressed[Qt::Key_K];
-        bits.d3 = !m_keysPressed[Qt::Key_J];
-        bits.d4 = !m_keysPressed[Qt::Key_H];
-        break;
-    case 0x7F:
-        bits.d0 = !m_keysPressed[Qt::Key_Space];
-        bits.d1 = !m_keysPressed[Qt::Key_Control];
-        bits.d2 = !m_keysPressed[Qt::Key_M];
-        bits.d3 = !m_keysPressed[Qt::Key_N];
-        bits.d4 = !m_keysPressed[Qt::Key_B];
-        break;
-    }
-    return r;
+//    union
+//    {
+//        uint8_t r = 0xFF;
+//        struct
+//        {
+//            uint8_t d0: 1;
+//            uint8_t d1: 1;
+//            uint8_t d2: 1;
+//            uint8_t d3: 1;
+//            uint8_t d4: 1;
+//        } bits;
+//    };
+
+
+
+//    switch (addr)
+//    {
+//    case 0xFE:
+//        bits.d0 = !m_keysPressed[Qt::Key_Shift];
+//        bits.d1 = !m_keysPressed[Qt::Key_Z];
+//        bits.d2 = !m_keysPressed[Qt::Key_X];
+//        bits.d3 = !m_keysPressed[Qt::Key_C];
+//        bits.d4 = !m_keysPressed[Qt::Key_V];
+//        break;
+//    case 0xFD:
+//        bits.d0 = !m_keysPressed[Qt::Key_A];
+//        bits.d1 = !m_keysPressed[Qt::Key_S];
+//        bits.d2 = !m_keysPressed[Qt::Key_D];
+//        bits.d3 = !m_keysPressed[Qt::Key_F];
+//        bits.d4 = !m_keysPressed[Qt::Key_G];
+//        break;
+//    case 0xFB:
+//        bits.d0 = !m_keysPressed[Qt::Key_Q];
+//        bits.d1 = !m_keysPressed[Qt::Key_W];
+//        bits.d2 = !m_keysPressed[Qt::Key_E];
+//        bits.d3 = !m_keysPressed[Qt::Key_R];
+//        bits.d4 = !m_keysPressed[Qt::Key_T];
+//        break;
+//    case 0xF7:
+//        bits.d0 = !m_keysPressed[Qt::Key_1];
+//        bits.d1 = !m_keysPressed[Qt::Key_2];
+//        bits.d2 = !m_keysPressed[Qt::Key_3];
+//        bits.d3 = !m_keysPressed[Qt::Key_4];
+//        bits.d4 = !m_keysPressed[Qt::Key_5];
+//        break;
+//    case 0xEF:
+//        bits.d0 = !m_keysPressed[Qt::Key_0];
+//        bits.d1 = !m_keysPressed[Qt::Key_9];
+//        bits.d2 = !m_keysPressed[Qt::Key_8];
+//        bits.d3 = !m_keysPressed[Qt::Key_7];
+//        bits.d4 = !m_keysPressed[Qt::Key_6];
+//        break;
+//    case 0xDF:
+//        bits.d0 = !m_keysPressed[Qt::Key_P];
+//        bits.d1 = !m_keysPressed[Qt::Key_O];
+//        bits.d2 = !m_keysPressed[Qt::Key_I];
+//        bits.d3 = !m_keysPressed[Qt::Key_U];
+//        bits.d4 = !m_keysPressed[Qt::Key_Y];
+//        break;
+//    case 0xBF:
+//        bits.d0 = !(m_keysPressed[Qt::Key_Return] || m_keysPressed[Qt::Key_Enter]);
+//        bits.d1 = !m_keysPressed[Qt::Key_L];
+//        bits.d2 = !m_keysPressed[Qt::Key_K];
+//        bits.d3 = !m_keysPressed[Qt::Key_J];
+//        bits.d4 = !m_keysPressed[Qt::Key_H];
+//        break;
+//    case 0x7F:
+//        bits.d0 = !m_keysPressed[Qt::Key_Space];
+//        bits.d1 = !m_keysPressed[Qt::Key_Control];
+//        bits.d2 = !m_keysPressed[Qt::Key_M];
+//        bits.d3 = !m_keysPressed[Qt::Key_N];
+//        bits.d4 = !m_keysPressed[Qt::Key_B];
+//        break;
+//    }
+//    return r;
 }
