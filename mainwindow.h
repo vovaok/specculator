@@ -5,6 +5,7 @@
 #include <QtWidgets>
 #include <QDebug>
 #include "z80.h"
+#include "zxtape.h"
 
 struct ZxScreenAttr
 {
@@ -95,8 +96,9 @@ public:
     ~MainWindow();
 
     Z80 *cpu = nullptr;
-//    uint8_t mem[0x10000];
+    uint8_t mem[0x10000];
     ZxScreen *scr;
+    ZxTape *tap;
 
     bool m_running = false;
 
@@ -109,6 +111,7 @@ public:
 
     constexpr static int cpuFreq = 3500000;
     constexpr static int videoFreq = 7375000;
+    constexpr static int intFreq = 50;
     constexpr static int cyclesPerFrame = cpuFreq / 25;
     constexpr static int cyclesPerLine = cyclesPerFrame / 625;
     constexpr static int cyclesHSync = cyclesPerLine * 4 / 64;
@@ -189,7 +192,7 @@ protected:
     };
 
     QMap<int, int> m_keysPressed;
-//    uint8_t m_keyport[8] {0};
+    uint8_t m_keyport[8] {0};
     QMap<int, QVector<ZxKeyCode>> m_keyMap;
 
     void updateKeyboard();

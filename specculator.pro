@@ -20,11 +20,13 @@ SOURCES += \
     mainwindow.cpp \
     z80.cpp \
     z80_alu.cpp \
-    z80_blockcmd.cpp
+    z80_blockcmd.cpp \
+    zxtape.cpp
 
 HEADERS += \
     mainwindow.h \
-    z80.h
+    z80.h \
+    zxtape.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

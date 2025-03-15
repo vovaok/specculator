@@ -3,10 +3,6 @@
 #include <chrono>
 #include <QElapsedTimer>
 
-uint8_t mem[0x10000];
-extern uint8_t mem2[0x10000];
-uint8_t m_keyport[8] {0};
-
 using namespace std::literals;
 
 MainWindow::MainWindow(QWidget *parent)
@@ -118,6 +114,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     scr = new ZxScreen((char *)mem + 0x4000);
 
+    tap = new ZxTape();
+    tap->bindPort(m_keyport + 7);
+    tap->openTap("test.TAP");
+
 
     bkptEdit = new QLineEdit(0);
     bkptEdit->setFixedWidth(64);
@@ -129,11 +129,12 @@ MainWindow::MainWindow(QWidget *parent)
     toolbar->addAction("reset", this, &MainWindow::reset)->setShortcut(QKeySequence("F2"));
     toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
     toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
-    toolbar->addAction("nmi", [=](){cpu->nmi();});
-    toolbar->addAction("int", [=](){cpu->irq();});
-    toolbar->addAction("testSAVE", [=](){cpu->call(1218);}); // SAVE
-    toolbar->addAction("testLOAD", [=](){cpu->call(0x05E7);}); // LOAD
-    toolbar->addAction("testBEEP", [=](){cpu->call(949);}); // BEEP
+    toolbar->addAction("play tap", [=](){tap->play();});
+//    toolbar->addAction("nmi", [=](){cpu->nmi();});
+//    toolbar->addAction("int", [=](){cpu->irq();});
+//    toolbar->addAction("testSAVE", [=](){cpu->call(1218);}); // SAVE
+//    toolbar->addAction("testLOAD", [=](){cpu->call(0x05E7);}); // LOAD
+//    toolbar->addAction("testBEEP", [=](){cpu->call(949);}); // BEEP
 
     toolbar->addWidget(bkptEdit);
 
@@ -240,22 +241,37 @@ void MainWindow::updateScreen()
     // hor line 64us - visual 52us
     // 625 lines per frame interlaced
 
-    // generate interrupt
-    if (m_running)
-        cpu->irq();
+//    // generate interrupt
+//    if (m_running)
+//        cpu->irq();
+
+    bool turbo = m_keysPressed.contains(27);
 
     QElapsedTimer perftimer;
-    if (etimer.isValid())
+    if (etimer.isValid() || turbo)
     {
         qint64 frame_ns = etimer.nsecsElapsed();
-        int N = frame_ns * cpuFreq / 1000000000;
+        qint64 N = frame_ns * (cpuFreq / 100000) / 10000;
         etimer.start();
+        if (turbo)
+        {
+            N = cpuFreq / 2;
+            etimer.invalidate();
+        }
         qint64 endT = cpu->T + N;
+        if (N > cpuFreq)
+
         perftimer.start();
         if (m_running)
         {
             while (cpu->T < endT)
             {
+            if (endT - cpu->T > cpuFreq)
+                {
+                    qDebug() << "WUT??";
+                    break;
+                }
+
                 if (bkpt && cpu->PC == bkpt)
                     cpu->halt = true;
 
@@ -296,7 +312,18 @@ void MainWindow::doStep()
     uint32_t *scrBuf = reinterpret_cast<uint32_t*>(frm.bits());
     uint32_t *end = scrBuf + 320*240;
 
+    qint64 oldT = cpu->T;
     cpu->step();
+    int dt_ns = (cpu->T - oldT) * 10'000 / (cpuFreq / 100'000);
+
+    // generate interrupt
+    if (m_running)
+    {
+        int ot = oldT % (cpuFreq / intFreq);
+        int t = cpu->T % (cpuFreq / intFreq);
+        if (ot > t) // interrupt on timer overflow
+            cpu->irq();
+    }
 
     scr->flash = (cpu->T / (cpuFreq / 3)) & 1;
 
@@ -320,6 +347,15 @@ void MainWindow::doStep()
                 videoptr = scrBuf;
         }
     }
+
+    if (cpu->PC == 0x0556 && !tap->isPlaying())
+    {
+        tap->play();
+        qDebug() << "Start the tape";
+    }
+
+    if (tap->isPlaying())
+        tap->update(dt_ns);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)

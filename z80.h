@@ -18,6 +18,7 @@ public:
     void acceptInt();
 
     std::function<void(uint16_t addr, uint8_t &data, bool wr)> ioreq;
+//    std::function<void(void)> iack;
 
 private:
 public:

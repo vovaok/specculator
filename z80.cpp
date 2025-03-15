@@ -3,13 +3,6 @@
 #include <chrono>
 #include <QDebug>
 
-#include "cpu.h"
-
-CPU *_cpu = nullptr;
-extern uint8_t mem[0x10000];
-uint8_t mem2[0x10000];
-extern uint8_t m_keyport[8];
-
 using namespace std::literals;
 
 Z80::Z80(void *memory) :
@@ -55,12 +48,6 @@ void Z80::nmi()
 void Z80::irq()
 {
     _int = 1;
-
-    if (_cpu)
-    {
-        _cpu->intrq = 1;
-        _cpu->ack = 1;
-    }
 }
 
 void Z80::acceptInt()
@@ -118,36 +105,12 @@ void Z80::step(bool force)
 
     uint16_t oldAF = AF, oldBC = BC, oldHL = HL, oldDE = DE;
 
-    if (_cpu)
-    {
-        z80_exec(_cpu);
-        T += _cpu->t;
-    }
-
     if (_int && IFF1)
         acceptInt();
-    else if (!halt)
+    else if (halt)
+        exec(0x00); // dummy NOP cycle when halt
+    else
         exec(fetchByte());
-
-    if (_cpu && !halt)
-    {
-        if (_cpu->a != A || _cpu->f != F ||
-            _cpu->bc != BC || _cpu->de != DE || _cpu->hl != HL ||
-            _cpu->ix != IX || _cpu->iy != IY)
-        {
-            qDebug() << Qt::hex << "ALARMA! PC =" << PC << " cpu->pc" << _cpu->pc << "last PC" << lastPC;
-            qDebug() << Qt::hex << "F =" << F << "; cpu->f =" << _cpu->f;
-            qDebug() << Qt::hex << "AF" << AF << ((_cpu->a << 8) | _cpu->f) << oldAF;
-            qDebug() << Qt::hex << "BC" << BC << _cpu->bc << oldDE;
-            qDebug() << Qt::hex << "DE" << DE << _cpu->de << oldDE;
-            qDebug() << Qt::hex << "HL" << HL << _cpu->hl << oldHL;
-            qDebug() << Qt::hex << "IX" << IX << _cpu->ix;
-            qDebug() << Qt::hex << "IY" << IY << _cpu->iy;
-//            dump();
-            halt = 1;
-            _cpu->halt = 1;
-        }
-    }
 
     if (enable_interrupt)
     {
@@ -656,12 +619,6 @@ void Z80::wr(uint16_t addr, uint8_t value)
     {
         mem[addr] = value;
         T += 3;
-        if (mem2[addr] != value)
-        {
-            qDebug() << Qt::hex << "mem wr @" << addr << "... PC =" << lastPC;
-            halt = 1;
-            _cpu->halt = 1;
-        }
     }
     else
     {
@@ -790,176 +747,8 @@ void Z80::dump()
 }
 
 
-
-// memrq rd
-int _cbmr(int addr, int, void*)
-{
-    return mem2[addr & 0xFFFF];
-}
-// memrq wr
-void _cbmw(int addr, int data, void*)
-{
-    addr &= 0xFFFF;
-    if (addr >= 0x4000)
-        mem2[addr] = data;
-}
-// iorq rd
-int _cbir(int addr, void*)
-{
-    if ((addr & 0xFF) == 0xFE)
-        for (int idx=0; idx<8; idx++)
-            if (!(addr & (0x100 << idx)))
-                return ~m_keyport[idx];
-    return 0xFF;
-}
-// iorq wr
-void _cbiw(int, int, void*)
-{
-
-}
-// iorq int : interrupt vector request
-int _cbiack(void*)
-{
-
-}
-//// memrd external
-//typedef int(*cbdmr)(int, void*);
-void _cbirq(int, void*)
-{
-
-}
-
-uint32_t xptrval;
-
-void z80_daa(CPU* cpu) {
-    const unsigned char* tdaa = daaTab + 2 * (cpu->a + 0x100 * ((cpu->f & 3) + ((cpu->f >> 2) & 4)));
-    cpu->f = *tdaa;
-    cpu->a = *(tdaa + 1);
-}
-
 void Z80::test()
 {
-    A = 0x23;
-    B = 0xF3;
 
-    if (!_cpu)
-    {
-        _cpu = cpuCreate(CPU_Z80, _cbmr, _cbmw, _cbir, _cbiw, _cbiack, _cbirq, &xptrval);
-        for (int i=0; i<16384; i++)
-            mem2[i] = ::mem[i];
-//        memcpy(mem2, ::mem, sizeof(mem2));
-    }
-
-//    uint8_t r1, f1;
-//    uint8_t r2, f2;
-
-//    for (int i=0; i<255; i++)
-//    {
-//        A = i;
-//        F = 0;
-//        flags.N = 1;
-//        flags.H = 1;
-//        flags.C = 1;
-//        _cpu->a = A;
-//        _cpu->f = F;
-//        z80_daa(_cpu);
-//        r1 = _cpu->a;
-//        f1 = _cpu->f;
-
-//        daa();
-//        r2 = A;
-//        f2 = F;
-
-//        if (r1 != r2 || f1 != f2)
-//        {
-//            qDebug() << Qt::hex << "TEST ERROR @" << i<<":" << r1 << r2 << f1 << f2;
-//            break;
-//      }
-
-//    }
-
-
-//    strcpy((char*)mem+8, "preved medved!");
-//    HL = 8;
-//    DE = 20;
-//    BC = 6;
-
-//    PC = 0;
-//    SP = 60000;
-
-//    mem[0] = 0xED;
-//    mem[1] = 0xB0;
-//    mem[2] = 0x76; // HALT!
-//    mem[3] = 0x18;
-//    mem[4] = 0xFE;
-
-//    for (int i=0; i<10; i++)
-//    {
-//        step();
-//    }
-
-//    for (int i=0; i<255; i++)
-//    {
-//        F = 0;
-//        A = i;
-//        neg();
-//        uint8_t r1 = A;
-//        uint8_t f1 = F;
-//        F = 0;
-//        A = 0;
-//        sub(i);
-//        uint8_t r2 = A;
-//        uint8_t f2 = F;
-//        if (r1 != r2)
-//        {
-//            qDebug() << "pizdec";
-//            return;
-//        }
-//        if ((f1) != (f2))
-//        {
-//            qDebug() << "fail @" << i << "f1=" << f1 << "f2=" << f2;
-//        }
-//    }
-
-
-//    for (int k=0; k<2; k++)
-//    {
-//        for (int i=0; i<255; i++)
-//        {
-//            B = i;
-//            for (int j=0; j<255; j++)
-////            int j = 0;
-//            {
-//                A = j;
-//                F = 0;
-//                uint8_t tmp = sub8(B, k);
-//                uint8_t fl = F;
-//                F = 0;
-//                A = sub(B, k);
-//                if (A != tmp)
-//                {
-//                    qDebug() << "pizdec @ A ="<<tmp<<"B ="<<B;
-//                    return;
-//                }
-//                if ((F & 0xFF) != (fl & 0xFF))
-//                {
-//                    qDebug() << "flagi @ add8 ="<<fl<<"add ="<<F<<"; A ="<<j<<"B ="<<B << "C =" << k;
-//    //                break;
-//                }
-//            }
-//        }
-//    }
-
-//    mem[0] = 0x01;
-//    mem[1] = 0x42;
-//    mem[2] = 0x23;
-//    mem[3] = 0x03;
-//    mem[4] = 0x02;
-//    mem[5] = 0x07;
-
-//    mem[0x2343] = 0x87;
-
-//    for (int i=0; i<10; i++)
-//        step();
 }
 
