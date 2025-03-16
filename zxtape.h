@@ -9,12 +9,16 @@ class ZxTape
 public:
     ZxTape();
 
-    void bindPort(uint8_t *port) {m_port = port;}
+    void bindPlayPort(uint8_t *port) {m_port = port;}
+    void bindRecPort(uint8_t *port) {m_recPort = port;}
 
     void openTap(QString filename);
 
     void play();
     bool isPlaying() const {return m_playing;}
+
+    void rec();
+    bool isRecording() const {return m_recording;}
 
     void update(int dt_ns);
 
@@ -39,6 +43,7 @@ private:
         Pause
     } m_state = Idle;
 
+    QString m_filename;
     QByteArray m_buffer;
     uint8_t *m_ptr = nullptr;
     uint8_t *m_end = nullptr;
@@ -49,10 +54,18 @@ private:
     int m_pilotCount = 0;
 
     uint8_t *m_port = nullptr;
+    uint8_t *m_recPort = nullptr;
     bool m_playing = false;
+    bool m_recording = false;
+    bool m_oldLevel;
+    int m_blockOffset;
 
     void nextBlock();
     void nextBit();
+
+    void recBit();
+    void endBlock();
+    void saveTap();
 };
 
 #endif // ZXTAPE_H

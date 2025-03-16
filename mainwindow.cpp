@@ -36,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
         }
     };
 
+//    QFile::remove("test.TAP");
+
     m_keyMap['1']   = {Key_1};
     m_keyMap['2']   = {Key_2};
     m_keyMap['3']   = {Key_3};
@@ -115,7 +117,8 @@ MainWindow::MainWindow(QWidget *parent)
     scr = new ZxScreen((char *)mem + 0x4000);
 
     tap = new ZxTape();
-    tap->bindPort(m_keyport + 7);
+    tap->bindPlayPort(m_keyport + 7);
+    tap->bindRecPort(&port254);
     tap->openTap("test.TAP");
 
 
@@ -353,8 +356,13 @@ void MainWindow::doStep()
         tap->play();
         qDebug() << "Start the tape";
     }
+    else if (cpu->PC == 0x04C2 && !tap->isRecording())
+    {
+        qDebug() << "Start tape recording";
+        tap->rec();
+    }
 
-    if (tap->isPlaying())
+    if (tap->isPlaying() || tap->isRecording())
         tap->update(dt_ns);
 }
 
