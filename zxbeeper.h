@@ -13,7 +13,7 @@ public:
     ZxBeeper(uint8_t *port);
     virtual ~ZxBeeper();
 
-    constexpr static int sampleFreq = 44100;
+    constexpr static int sampleFreq = 70000;
     constexpr static int m_audioBuf_ms = 20;
 
     void update(int dt_ns);

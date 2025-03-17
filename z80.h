@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <QString>
+#include <QDataStream>
 
 class Z80
 {
@@ -143,6 +144,9 @@ public:
     QString hex(uint16_t v);
     QString flagString();
     void dump();
+
+    void saveState(QDataStream &out);
+    void restoreState(QDataStream &in);
 
     uint16_t lastPC = 0;
 

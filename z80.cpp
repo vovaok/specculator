@@ -92,11 +92,11 @@ void Z80::acceptInt()
 
 void Z80::step(bool force)
 {
-    if (PC > 0x4000 && lastPC != PC)
-    {
-        halt = 1;
-        dump();
-    }
+//    if (PC > 0x4000 && lastPC != PC)
+//    {
+//        halt = 1;
+//        dump();
+//    }
 
     lastPC = PC;
 
@@ -744,6 +744,24 @@ void Z80::dump()
     qDebug() << "FLAGS:" << flagString();
     qDebug() << "MEM:" << hex(lastPC) << ":" << QByteArray((const char *)mem + lastPC, 16).toHex(' ');
     qDebug() << "MEM:" << hex(HL) << ":" << QByteArray((const char *)mem + HL, 16).toHex(' ');
+}
+
+void Z80::saveState(QDataStream &out)
+{
+    out << AF << BC << DE << HL;
+    out << A_F_ << B_C_ << D_E_ << H_L_;
+    out << IX << IY << SP << PC;
+    out << I << R;
+    out << IFF1 << IFF2 << IM;
+}
+
+void Z80::restoreState(QDataStream &in)
+{
+    in >> AF >> BC >> DE >> HL;
+    in >> A_F_ >> B_C_ >> D_E_ >> H_L_;
+    in >> IX >> IY >> SP >> PC;
+    in >> I >> R;
+    in >> IFF1 >> IFF2 >> IM;
 }
 
 

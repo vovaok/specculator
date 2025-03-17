@@ -143,6 +143,31 @@ MainWindow::MainWindow(QWidget *parent)
 
     toolbar->addWidget(bkptEdit);
 
+    toolbar->addAction("quick save", this, [=](){
+        QFile f("snap.z80");
+        if (f.open(QIODevice::WriteOnly))
+        {
+            f.write(reinterpret_cast<const char *>(mem), sizeof(mem));
+            QDataStream out(&f);
+            cpu->saveState(out);
+            out << port254;
+            f.close();
+        }
+    })->setShortcut(QKeySequence("F8"));
+
+    toolbar->addAction("quick load", this, [=](){
+        QFile f("snap.z80");
+        if (f.open(QIODevice::ReadOnly))
+        {
+            f.read(reinterpret_cast<char *>(mem), sizeof(mem));
+            QDataStream in(&f);
+            cpu->restoreState(in);
+            in >> port254;
+            f.close();
+        }
+    })->setShortcut(QKeySequence("F9"));
+
+
     QFormLayout *reglay = new QFormLayout;
 
     QStringList regNames = {"FLAGS", "AF", "BC", "DE", "HL", "AF'", "BC'", "DE'", "HL'",
@@ -261,17 +286,18 @@ void MainWindow::updateScreen()
         if (turbo)
         {
             N = cpuFreq / 2;
-            etimer.invalidate();
+//            etimer.invalidate();
         }
         qint64 endT = cpu->T + N;
         if (N > cpuFreq)
+            N = cpuFreq;
 
         perftimer.start();
         if (m_running)
         {
             while (cpu->T < endT)
             {
-            if (endT - cpu->T > cpuFreq)
+                if (endT - cpu->T > cpuFreq)
                 {
                     qDebug() << "WUT??";
                     break;
@@ -367,6 +393,13 @@ void MainWindow::doStep()
     if (tap->isPlaying() || tap->isRecording())
         tap->update(dt_ns);
 
+//    if (tap->isPlaying())
+//    {
+//        if (m_keyport[7] & 0x40)
+//            port254 |= 0x10;
+//        else
+//            port254 &= ~0x10;
+//    }
     beeper->update(dt_ns);
 }
 
