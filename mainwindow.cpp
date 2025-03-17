@@ -121,6 +121,8 @@ MainWindow::MainWindow(QWidget *parent)
     tap->bindRecPort(&port254);
     tap->openTap("test.TAP");
 
+    beeper = new ZxBeeper(&port254);
+
 
     bkptEdit = new QLineEdit(0);
     bkptEdit->setFixedWidth(64);
@@ -364,6 +366,8 @@ void MainWindow::doStep()
 
     if (tap->isPlaying() || tap->isRecording())
         tap->update(dt_ns);
+
+    beeper->update(dt_ns);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)

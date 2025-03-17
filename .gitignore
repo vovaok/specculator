@@ -74,3 +74,4 @@ CMakeLists.txt.user*
 
 *.user*
 specculator/
+bin/

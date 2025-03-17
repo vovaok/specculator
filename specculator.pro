@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -21,11 +21,13 @@ SOURCES += \
     z80.cpp \
     z80_alu.cpp \
     z80_blockcmd.cpp \
+    zxbeeper.cpp \
     zxtape.cpp
 
 HEADERS += \
     mainwindow.h \
     z80.h \
+    zxbeeper.h \
     zxtape.h
 
 # Default rules for deployment.

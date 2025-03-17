@@ -6,6 +6,7 @@
 #include <QDebug>
 #include "z80.h"
 #include "zxtape.h"
+#include "zxbeeper.h"
 
 struct ZxScreenAttr
 {
@@ -37,6 +38,7 @@ public:
         case 6: return br? 0xffffff00: 0xffc0c000;
         case 7: return br? 0xffffffff: 0xffc0c0c0;
         }
+        return 0;
     }
 
     uint32_t getPixel(int x, int y)
@@ -99,6 +101,7 @@ public:
     uint8_t mem[0x10000];
     ZxScreen *scr;
     ZxTape *tap;
+    ZxBeeper *beeper;
 
     bool m_running = false;
 
