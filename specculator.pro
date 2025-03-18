@@ -22,12 +22,14 @@ SOURCES += \
     z80_alu.cpp \
     z80_blockcmd.cpp \
     zxbeeper.cpp \
+    zxscreen.cpp \
     zxtape.cpp
 
 HEADERS += \
     mainwindow.h \
     z80.h \
     zxbeeper.h \
+    zxscreen.h \
     zxtape.h
 
 # Default rules for deployment.

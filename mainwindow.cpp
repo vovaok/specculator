@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
             }
             else
             {
-                qDebug() << "WR" << Qt::hex << addr << "<-" << data;
+//                qDebug() << "WR" << Qt::hex << addr << "<-" << data;
             }
         }
         else
@@ -31,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
             }
             else
             {
-                qDebug() << "RD" << Qt::hex << addr << "->" << data;
+//                qDebug() << "RD" << Qt::hex << addr << "->" << data;
             }
         }
     };
@@ -288,6 +288,10 @@ void MainWindow::updateScreen()
             N = cpuFreq / 2;
 //            etimer.invalidate();
         }
+//        if (perf > 90)
+//        {
+//            N = N * 90 / perf;
+//        }
         qint64 endT = cpu->T + N;
         if (N > cpuFreq)
             N = cpuFreq;
