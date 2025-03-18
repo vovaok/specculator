@@ -22,6 +22,7 @@ SOURCES += \
     z80_alu.cpp \
     z80_blockcmd.cpp \
     zxbeeper.cpp \
+    zxkeyboard.cpp \
     zxscreen.cpp \
     zxtape.cpp
 
@@ -29,6 +30,7 @@ HEADERS += \
     mainwindow.h \
     z80.h \
     zxbeeper.h \
+    zxkeyboard.h \
     zxscreen.h \
     zxtape.h
 
