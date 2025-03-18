@@ -46,14 +46,8 @@ MainWindow::MainWindow(QWidget *parent)
             qDebug() << "WARNING! unexpected ROM size";
     }
 
-
-    //    frm = QImage(320, 240, QImage::Format_Indexed8);
-    //    frm.setColorTable(zxColors);
-    frm = QImage(320, 240, QImage::Format_ARGB32_Premultiplied);
-    frm.fill(Qt::black);
-    videoptr = reinterpret_cast<uint32_t*>(frm.bits());
-
-    scr = new ZxScreen((char *)mem + 0x4000);
+    scr = new ZxScreen((char *)mem + 0x4000, 320, 240);
+    scr->bindBorderPort(&port254);
 
     keyb = new ZxKeyboard(keyport);
 
@@ -154,7 +148,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::reset()
 {
-    frm.fill(Qt::black);
+    scr->clear();
     memset(mem+0x4000, 0, 0xC000);
     cpu->reset();
 //    updateRegs();
@@ -274,20 +268,14 @@ void MainWindow::updateScreen()
 //    }
 
 
-    QImage img = scr->toImage();
-    QPainter pai(&frm);
-    pai.drawImage(32, 24, img);
-    pai.end();
-    scrWidget->setPixmap(QPixmap::fromImage(frm));
+    QImage img = scr->frame();
+    scrWidget->setPixmap(QPixmap::fromImage(img));
 
     status->setNum(perf);
 }
 
 void MainWindow::doStep()
 {
-    uint32_t *scrBuf = reinterpret_cast<uint32_t*>(frm.bits());
-    uint32_t *end = scrBuf + 320*240;
-
     qint64 oldT = cpu->T;
     cpu->step();
     int dt_ns = (cpu->T - oldT) * 10'000 / (cpuFreq / 100'000);
@@ -301,28 +289,7 @@ void MainWindow::doStep()
             cpu->irq();
     }
 
-    scr->flash = (cpu->T / (cpuFreq / 3)) & 1;
-
-    int frame_T = cpu->T % (cyclesPerFrame);
-    int frame_line = frame_T / cyclesPerLine + 1; // [1 ... 625]
-    if (frame_line > 312)
-        frame_line -= 312;
-    int frm_y = frame_line - 6 - 32;
-    if (frm_y >= 0 && frm_y < 240)
-    {
-        int line_T = frame_T % cyclesPerLine;
-        int frm_x = (line_T - lineStartT) * videoFreq / cpuFreq - 40;
-        if (frm_x >= 0)
-        {
-            if (frm_x > 320)
-                frm_x = 320;
-            uint32_t *last = scrBuf + frm_y*320 + frm_x;
-            while (videoptr < last)
-                *videoptr++ = ZxScreen::zxColor(port254 & 7, 0);
-            if (videoptr >= end)
-                videoptr = scrBuf;
-        }
-    }
+    scr->update(cpu->T);
 
     if (cpu->PC == 0x0556 && !tap->isPlaying())
     {
