@@ -12,17 +12,29 @@ public:
     Z80(void *memory);
 
     void reset();
-    void step(bool force = false);
+    void step();
+    void stop() {halt = 1;}
+    void run() {halt = 0;}
 
-    void nmi();
     void irq();
-    void acceptInt();
+
+    qint64 cyclesCount() const {return T;}
+    uint16_t programCounter() const {return PC;}
+
+    void dump();
+
+    void saveState(QDataStream &out);
+    void restoreState(QDataStream &in);
 
     std::function<void(uint16_t addr, uint8_t &data, bool wr)> ioreq;
 //    std::function<void(void)> iack;
 
+    // for internal use:
+    void test();
+
 private:
-public:
+    friend class CpuWidget;
+
     struct Flags
     {
         uint8_t C: 1; // carry
@@ -76,10 +88,14 @@ public:
     void wr(uint16_t addr, uint8_t value);
     uint8_t rd(uint16_t addr);
     uint8_t fetchByte();
+    uint8_t fetchNop();
     uint16_t readWord();
     void out(uint16_t addr, uint8_t data);
     uint8_t in(uint16_t addr);
     uint8_t in(); // IN r,(BC)
+
+    void nmi();
+    void acceptInt();
 
     uint8_t prefix = 0x00;
     uint16_t pointer();
@@ -132,25 +148,14 @@ public:
     void outi();
     void outd();
 
-
-    void sleepCycles(int n);
-
     inline static bool parity(uint8_t v)
     {
         return ((0x9669 >> ((v ^ (v >> 4)) & 0xF)) & 1);
     }
 
-    QString hex(uint8_t v);
-    QString hex(uint16_t v);
     QString flagString();
-    void dump();
-
-    void saveState(QDataStream &out);
-    void restoreState(QDataStream &in);
 
     uint16_t lastPC = 0;
-
-    void test();
 };
 
 

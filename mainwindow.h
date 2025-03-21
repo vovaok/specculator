@@ -4,11 +4,15 @@
 #include <QMainWindow>
 #include <QtWidgets>
 #include <QDebug>
+
 #include "z80.h"
 #include "zxscreen.h"
 #include "zxkeyboard.h"
 #include "zxtape.h"
 #include "zxbeeper.h"
+
+#include "screenwidget.h"
+#include "cpuwidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -35,21 +39,17 @@ public:
     void run();
 
     constexpr static int cpuFreq = 3'500'000;
-    constexpr static int videoFreq = 7'375'000;
+//    constexpr static int videoFreq = 7'375'000;
     constexpr static int intFreq = 50;
 
     // GUI
-    QLabel *scrWidget;
-    QMap<QString, QLineEdit *> regEdits;
-    QLineEdit *bkptEdit;
+    ScreenWidget *scrWidget = nullptr;
+    CpuWidget *cpuWidget = nullptr;
     QLabel *status;
     QElapsedTimer etimer;
     double perf;
 
-    uint32_t *videoptr;
 
-
-    void updateRegs();
     void updateScreen();
 
     void doStep();

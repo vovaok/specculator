@@ -90,8 +90,9 @@ void Z80::acceptInt()
 
 }
 
-void Z80::step(bool force)
+void Z80::step()
 {
+    // test with ROM code only:
 //    if (PC > 0x4000 && lastPC != PC)
 //    {
 //        halt = 1;
@@ -103,12 +104,10 @@ void Z80::step(bool force)
     if (bkpt && bkpt == PC)
         halt = true;
 
-    uint16_t oldAF = AF, oldBC = BC, oldHL = HL, oldDE = DE;
-
     if (_int && IFF1)
         acceptInt();
     else if (halt)
-        exec(0x00); // dummy NOP cycle when halt
+        exec(fetchNop()); // dummy NOP cycle when halt
     else
         exec(fetchByte());
 
@@ -119,7 +118,6 @@ void Z80::step(bool force)
             IFF1 = IFF2 = 1;
     }
 
-//    sleepCycles(T);
     //    T = 0;
 }
 
@@ -132,7 +130,7 @@ void Z80::exec(uint8_t opcode)
     uint8_t tmp;
     uint16_t addr;
 
-//    Z80_REGPAIR(H, L); // shadows real HL register
+    // shadow real HL register
     uint16_t HL;
     uint8_t &L = reinterpret_cast<uint8_t *>(&HL)[0];
     uint8_t &H = reinterpret_cast<uint8_t *>(&HL)[1];
@@ -640,6 +638,12 @@ uint8_t Z80::fetchByte()
     return mem[PC++];
 }
 
+uint8_t Z80::fetchNop()
+{
+    R = (R + 1) & 0x7F;
+    return 0;
+}
+
 uint16_t Z80::readWord()
 {
     uint16_t w = rd(PC++);
@@ -709,17 +713,12 @@ void Z80::ret()
 
 
 
-void Z80::sleepCycles(int n)
-{
-    //std::this_thread::sleep_for(n * 400ns);
-}
-
-QString Z80::hex(uint8_t v)
+QString hex(uint8_t v)
 {
     return QString().asprintf("%02X", v);
 }
 
-QString Z80::hex(uint16_t v)
+QString hex(uint16_t v)
 {
     return QString().asprintf("%04X", v);
 }

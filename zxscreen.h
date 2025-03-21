@@ -32,8 +32,8 @@ public:
     //    void setPixel(int x, int y, uint8_t attr);
     //    void resetPixel(int x, int y, uint8_t attr);
 
-    constexpr static int cpuFreq = 3500000;
-    constexpr static int videoFreq = 7375000;
+    constexpr static int cpuFreq = 3'500'000;
+    constexpr static int videoFreq = 7'375'000;
     constexpr static int intFreq = 50;
 
 private:

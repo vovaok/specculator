@@ -34,6 +34,9 @@ void ZxScreen::update(qint64 T)
     m_flash = (T / (cpuFreq / 3)) & 1;
     m_borderColor = zxColor(*m_port & 7, 0);
 
+    // hor line 64us - visual 52us
+    // 625 lines per frame interlaced
+
     int frame_T = T % (cyclesPerFrame);
     int frame_line = frame_T / cyclesPerLine + 1; // [1 ... 625]
     if (frame_line > 312)
