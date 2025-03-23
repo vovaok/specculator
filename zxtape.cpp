@@ -7,7 +7,6 @@
 
 ZxTape::ZxTape()
 {
-
 }
 
 void ZxTape::openTap(QString filename)
@@ -147,6 +146,7 @@ void ZxTape::nextBlock()
             m_pilotCount = 1500;
         nextBit();
     }
+    m_changed = true;
 }
 
 void ZxTape::nextBit()

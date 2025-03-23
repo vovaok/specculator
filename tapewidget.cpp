@@ -2,12 +2,17 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
+#include <QFileDialog>
 
 TapeWidget::TapeWidget(ZxTape *tape, QWidget *parent)
     : QWidget{parent}
     , m_tape(tape)
 {
     setStyleSheet("QListWidget {min-width: 16em;} QPushButton {max-width: 2em; max-height: 2em;}");
+
+    m_openBtn = new QPushButton("Open");
+    m_copyBtn = new QPushButton("Copy");
+    m_tapeLabel = new QLabel();
 
     m_list = new QListWidget;
     m_label = new QLabel;
@@ -20,6 +25,11 @@ TapeWidget::TapeWidget(ZxTape *tape, QWidget *parent)
     m_downBtn = new QPushButton("v");
     m_delBtn = new QPushButton("x");
 
+    QHBoxLayout *tapelay = new QHBoxLayout;
+    tapelay->addWidget(m_tapeLabel);
+    tapelay->addWidget(m_openBtn);
+    tapelay->addWidget(m_copyBtn);
+
     QHBoxLayout *btnlay = new QHBoxLayout;
     btnlay->addWidget(m_stopBtn);
     btnlay->addWidget(m_playBtn);
@@ -30,10 +40,24 @@ TapeWidget::TapeWidget(ZxTape *tape, QWidget *parent)
 
     QVBoxLayout *lay = new QVBoxLayout;
     setLayout(lay);
+    lay->addLayout(tapelay);
     lay->addLayout(btnlay);
     lay->addWidget(m_label);
     lay->addWidget(m_progress);
     lay->addWidget(m_list);
+
+    connect(m_openBtn, &QPushButton::clicked, this, [this](){
+        QString filename = QFileDialog::getOpenFileName(nullptr, "Open tape", QString(), "Tape (*.tap)");
+        if (QFile::exists(filename))
+            openTap(filename);
+    });
+
+    connect(m_copyBtn, &QPushButton::clicked, this, [this](){
+        QString filename = QFileDialog::getSaveFileName(nullptr, "Copy tape", QString(), "Tape (*.tap)");
+        m_tape->m_filename = filename;
+        m_tape->saveTap();
+        openTap(filename);
+    });
 
     connect(m_stopBtn, &QPushButton::clicked, this, [this](){m_tape->stop();});
     connect(m_playBtn, &QPushButton::clicked, this, [this](){m_tape->play();});
@@ -43,6 +67,9 @@ TapeWidget::TapeWidget(ZxTape *tape, QWidget *parent)
     connect(m_delBtn, &QPushButton::clicked, this, &TapeWidget::deleteCurrentBlock);
 
     connect(m_list, &QListWidget::currentRowChanged, this, &TapeWidget::activateCurrentBlock);
+
+    QSettings sets;
+    open(sets.value("tapeFile", "cassette.TAP").toString());
 }
 
 void TapeWidget::open(QString filename)
@@ -57,6 +84,9 @@ void TapeWidget::openTap(QString filename)
 {
     m_tape->openTap(filename);
     updateBlocks();
+    m_tapeLabel->setText("Tape: " + QFileInfo(filename).baseName());
+    QSettings sets;
+    sets.setValue("tapeFile", filename);
 }
 
 void TapeWidget::updateState()
@@ -189,15 +219,16 @@ void TapeWidget::activateBlock(int idx)
 
 void TapeWidget::activateCurrentBlock()
 {
-    if (!m_tape->isStopped())
-        return;
+//    if (!m_tape->isStopped())
+//        return;
 
     QListWidgetItem *item = m_list->currentItem();
     if (item)
     {
         m_curBlockOffset = item->data(Qt::UserRole).toInt();
         m_curBlockLength = item->data(Qt::UserRole + 1).toInt();
-        m_tape->m_ptr = m_tape->begin() + m_curBlockOffset;
+        if (m_tape->isStopped())
+            m_tape->m_ptr = m_tape->begin() + m_curBlockOffset;
         m_progress->setMaximum(m_curBlockLength);
         m_progress->setValue(0);
         m_label->setText(item->text());
@@ -206,7 +237,8 @@ void TapeWidget::activateCurrentBlock()
     {
         m_curBlockOffset = 0;
         m_curBlockLength = 0;
-        m_tape->m_ptr = nullptr;
+        if (m_tape->isStopped())
+            m_tape->m_ptr = nullptr;
         m_progress->setValue(0);
         m_label->setText("");
     }

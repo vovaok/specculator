@@ -54,7 +54,6 @@ MainWindow::MainWindow(QWidget *parent)
     tap = new ZxTape();
     tap->bindPlayPort(keyport + 7);
     tap->bindRecPort(&port254);
-//    tap->openTap("test.TAP"); // now do it in the tapeWidget
 
     beeper = new ZxBeeper(&port254);
 
@@ -108,7 +107,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     tapeWidget = new TapeWidget(tap);
     tapeWidget->hide();
-    tapeWidget->open("test.TAP");
 
     status = new QLabel();
 

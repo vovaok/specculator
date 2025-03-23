@@ -25,6 +25,9 @@ signals:
 
 private:
     ZxTape *m_tape;
+    QPushButton *m_openBtn;
+    QPushButton *m_copyBtn;
+    QLabel *m_tapeLabel;
     QPushButton *m_playBtn;
     QPushButton *m_stopBtn;
     QPushButton *m_recBtn;
