@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
             }
             else
             {
+                data = 0xFF;
 //                qDebug() << "RD" << Qt::hex << addr << "->" << data;
             }
         }

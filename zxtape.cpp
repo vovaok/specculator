@@ -102,6 +102,7 @@ void ZxTape::update(int dt_ns)
         if (level && !m_oldLevel)
         {
             m_period = m_time_ns;
+//            qDebug() << m_period;
             m_time_ns = 0;
             recBit();
         }
@@ -220,6 +221,7 @@ void ZxTape::recBit()
     }
     else if (m_state == DataBits)
     {
+//        qDebug() << "data bit";
         if (!m_bit)
         {
             m_buffer.append('\0');
@@ -232,6 +234,7 @@ void ZxTape::recBit()
         {
             m_bit = 0;
             m_len++;
+//            qDebug() << "next" << m_len;
         }
     }
 }
@@ -240,6 +243,12 @@ void ZxTape::endBlock()
 {
     if (m_state == DataBits)
     {
+//        qDebug() << "len" << m_len << "bit" << m_bit;
+        if (m_bit > 0) // odd bits
+        {
+            m_bit = 0;
+            m_buffer.chop(1);
+        }
         *reinterpret_cast<uint16_t *>(m_buffer.data() + m_blockOffset) = m_len;
         m_changed = true;
         m_state = Idle;
