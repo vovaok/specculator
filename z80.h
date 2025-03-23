@@ -75,7 +75,7 @@ private:
     bool blk = false; // block operation in progress
     bool _int = false; // interrupt request
     int enable_interrupt = 0;
-    int T = 0; // cycles
+    qint64 T = 0; // cycles
 
     void exec(uint8_t opcode);
     void execCB();

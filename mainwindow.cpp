@@ -213,6 +213,7 @@ void MainWindow::updateScreen()
     if (tapeWidget)
         tapeWidget->updateState();
 
+//    status->setText(QString("%1").arg(cpu->cyclesCount()));
     status->setNum(perf);
 }
 

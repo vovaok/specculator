@@ -57,7 +57,7 @@ void ZxBeeper::run()
     }
 
     audioOutput = new QAudioOutput(format);
-    audioOutput->setVolume(0.2);
+    audioOutput->setVolume(0.5);
     audioOutput->setBufferSize(sampleFreq * 2);
     m_device = audioOutput->start();
 
