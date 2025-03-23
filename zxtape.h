@@ -20,19 +20,15 @@ public:
     void rec();
     bool isRecording() const {return m_recording;}
 
+    void stop();
+    bool isStopped() const {return !m_playing && !m_recording;}
+
     void update(int dt_ns);
 
+    bool isChanged();
+
 private:
-    struct TapHeader
-    {
-        uint8_t blockType; // 0x00 - header, 0xff - data
-        uint8_t fileType; // 0x00 - Program, 0x01 - Numeric Array, 0x02 - Symbol Array, 0x03 - Bytes
-        char name[10];
-        uint16_t dataLength;
-        uint16_t param; // autorun line or start address
-        uint16_t programLength;
-        //    uint8_t checksum;
-    };
+    friend class TapeWidget;
 
     enum ZxTapeState
     {
@@ -45,8 +41,8 @@ private:
 
     QString m_filename;
     QByteArray m_buffer;
+    uint8_t *m_curBlock = nullptr;
     uint8_t *m_ptr = nullptr;
-    uint8_t *m_end = nullptr;
     uint16_t m_len = 0;
     uint8_t m_bit = 0;
     int m_period = 0;
@@ -58,7 +54,8 @@ private:
     bool m_playing = false;
     bool m_recording = false;
     bool m_oldLevel;
-    int m_blockOffset;
+    int m_blockOffset = 0;
+    bool m_changed = false;
 
     void nextBlock();
     void nextBit();
@@ -66,6 +63,12 @@ private:
     void recBit();
     void endBlock();
     void saveTap();
+
+    uint8_t *begin();
+    uint8_t *end();
+    uint16_t readLen();
+
+    int curOffset();
 };
 
 #endif // ZXTAPE_H

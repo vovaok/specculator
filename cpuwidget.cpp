@@ -5,7 +5,6 @@
 CpuWidget::CpuWidget(QWidget *parent) : QGroupBox("CPU", parent)
 {
     setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-    setStyleSheet("font-family: 'Consolas';");
 
     QFormLayout *reglay = new QFormLayout;
     QStringList regNames = {"FLAGS", "AF", "BC", "DE", "HL", "AF'", "BC'", "DE'", "HL'",

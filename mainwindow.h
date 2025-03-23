@@ -13,6 +13,7 @@
 
 #include "screenwidget.h"
 #include "cpuwidget.h"
+#include "tapewidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -45,6 +46,7 @@ public:
     // GUI
     ScreenWidget *scrWidget = nullptr;
     CpuWidget *cpuWidget = nullptr;
+    TapeWidget *tapeWidget = nullptr;
     QLabel *status;
     QElapsedTimer etimer;
     double perf;

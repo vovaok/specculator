@@ -18,6 +18,7 @@ void ZxTape::openTap(QString filename)
     if (f.open(QIODevice::ReadOnly))
     {
         m_buffer = f.readAll();
+        m_changed = true;
         f.close();
     }
     else
@@ -28,18 +29,28 @@ void ZxTape::openTap(QString filename)
 
 void ZxTape::play()
 {
+    if (isPlaying())
+        return;
+
     if (m_port && !m_buffer.isEmpty())
     {
         m_playing = true;
         m_recording = false;
         m_state = Idle;
-        if (!m_ptr)
-            nextBlock();
+        m_len = 0;
+        m_bit = 0;
+        m_time_ns = 0;
+        m_period = 0;
+
+        nextBlock();
     }
 }
 
 void ZxTape::rec()
 {
+    if (isRecording())
+        return;
+
     if (m_recPort)
     {
 //        saveTap();
@@ -53,6 +64,14 @@ void ZxTape::rec()
         m_time_ns = 0;
         m_period = 0;
     }
+}
+
+void ZxTape::stop()
+{
+    m_ptr = m_curBlock;
+    m_recording = false;
+    m_playing = false;
+    m_state = Idle;
 }
 
 void ZxTape::update(int dt_ns)
@@ -95,28 +114,37 @@ void ZxTape::update(int dt_ns)
     }
 }
 
+bool ZxTape::isChanged()
+{
+    bool r = m_changed;
+    m_changed = false;
+    return r;
+}
+
 void ZxTape::nextBlock()
 {
     if (m_buffer.isEmpty())
         return;
 
-    m_end = reinterpret_cast<uint8_t *>(m_buffer.data()) + m_buffer.size();
+    uint8_t *end = this->end();
     if (!m_ptr)
-        m_ptr = reinterpret_cast<uint8_t *>(m_buffer.data());
-    m_len = *reinterpret_cast<uint16_t *>(m_ptr);
-    m_ptr += 2;
-    if (m_ptr >= m_end || m_ptr + m_len > m_end)
+        m_ptr = begin();
+    m_curBlock = m_ptr;
+    m_len = readLen();
+    if (m_ptr >= end || m_ptr + m_len > end)
     {
-        m_ptr = m_end = nullptr;
+        m_ptr = nullptr;
         m_len = 0;
         m_playing = false;
-        qDebug() << "Stop the tape";
-//        qDebug() << "[ZxTape] An error has occured when opening the tape";
+//        qDebug() << "Stop the tape";
     }
     else
     {
         m_state = PilotTone;
-        m_pilotCount = 2000;
+        if (*m_ptr == 0x00) // if this is header
+            m_pilotCount = 3000;
+        else
+            m_pilotCount = 1500;
         nextBit();
     }
 }
@@ -195,7 +223,7 @@ void ZxTape::recBit()
         if (!m_bit)
         {
             m_buffer.append('\0');
-            m_ptr = reinterpret_cast<uint8_t *>(m_buffer.data()) + m_buffer.size() - 1;
+            m_ptr = end() - 1;
         }
         bitValue = (m_period > ZX_BIT_1_us * 750);
         if (bitValue)
@@ -213,8 +241,10 @@ void ZxTape::endBlock()
     if (m_state == DataBits)
     {
         *reinterpret_cast<uint16_t *>(m_buffer.data() + m_blockOffset) = m_len;
+        m_changed = true;
         m_state = Idle;
         saveTap();
+//        qDebug() << "Block saved, len =" << m_len;
     }
 }
 
@@ -223,13 +253,34 @@ void ZxTape::saveTap()
     QFile f(m_filename);
     if (f.open(QIODevice::WriteOnly))
     {
-        qDebug() << "Block saved, len =" << m_len;
         f.write(m_buffer);
         f.close();
     }
     else
     {
-        qDebug() << "{ZxTape] Error: Can't open TAP file!";
+        qDebug() << "{ZxTape] Error: Can't write TAP file!";
     }
+}
+
+uint8_t *ZxTape::begin()
+{
+    return reinterpret_cast<uint8_t *>(m_buffer.data());
+}
+
+uint8_t *ZxTape::end()
+{
+    return reinterpret_cast<uint8_t *>(m_buffer.data() + m_buffer.size());
+}
+
+uint16_t ZxTape::readLen()
+{
+    uint16_t len = *reinterpret_cast<uint16_t *>(m_ptr);
+    m_ptr += 2;
+    return len;
+}
+
+int ZxTape::curOffset()
+{
+    return m_ptr - begin();
 }
 

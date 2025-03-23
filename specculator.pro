@@ -20,6 +20,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     screenwidget.cpp \
+    tapewidget.cpp \
     z80.cpp \
     z80_alu.cpp \
     z80_blockcmd.cpp \
@@ -32,6 +33,7 @@ HEADERS += \
     cpuwidget.h \
     mainwindow.h \
     screenwidget.h \
+    tapewidget.h \
     z80.h \
     zxbeeper.h \
     zxkeyboard.h \

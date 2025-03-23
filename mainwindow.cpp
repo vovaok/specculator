@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget *parent)
     tap = new ZxTape();
     tap->bindPlayPort(keyport + 7);
     tap->bindRecPort(&port254);
-    tap->openTap("test.TAP");
+//    tap->openTap("test.TAP"); // now do it in the tapeWidget
 
     beeper = new ZxBeeper(&port254);
 
@@ -65,6 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
     toolbar->addAction("reset", this, &MainWindow::reset)->setShortcut(QKeySequence("F2"));
     toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
     toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
+    toolbar->addAction("tape", this, [this](){tapeWidget->setVisible(!tapeWidget->isVisible());})->setShortcut(QKeySequence("F7"));
 
 
     toolbar->addAction("quick save", this, [=](){
@@ -93,6 +94,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 
+    setStyleSheet("font-family: 'Consolas';");
 
     scrWidget = new ScreenWidget();
     scrWidget->bindScreen(scr);
@@ -104,11 +106,16 @@ MainWindow::MainWindow(QWidget *parent)
     cpuWidget->hide();
     cpuWidget->bindCpu(cpu);
 
+    tapeWidget = new TapeWidget(tap);
+    tapeWidget->hide();
+    tapeWidget->open("test.TAP");
+
     status = new QLabel();
 
     QHBoxLayout *lay = new QHBoxLayout;
     setCentralWidget(new QWidget());
     centralWidget()->setLayout(lay);
+    lay->addWidget(tapeWidget);
     lay->addWidget(cpuWidget);
     lay->addWidget(scrWidget, 1);
 
@@ -201,8 +208,12 @@ void MainWindow::updateScreen()
     if (cpuWidget)
         cpuWidget->updateRegs();
 
+    // this is done synchronized with CPU cycles later:
 //    if (scrWidget)
 //        scrWidget->update();
+
+    if (tapeWidget)
+        tapeWidget->updateState();
 
     status->setNum(perf);
 }
@@ -233,11 +244,11 @@ void MainWindow::doStep()
     if (cpu->programCounter() == 0x0556 && !tap->isPlaying())
     {
         tap->play();
-        qDebug() << "Start the tape";
+//        qDebug() << "Start the tape";
     }
     else if (cpu->programCounter() == 0x04C2 && !tap->isRecording())
     {
-        qDebug() << "Start tape recording";
+//        qDebug() << "Start tape recording";
         tap->rec();
     }
 
