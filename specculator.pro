@@ -16,6 +16,7 @@ win32: {
 }
 
 SOURCES += \
+    computer.cpp \
     cpuwidget.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -30,6 +31,7 @@ SOURCES += \
     zxtape.cpp
 
 HEADERS += \
+    computer.h \
     cpuwidget.h \
     mainwindow.h \
     screenwidget.h \

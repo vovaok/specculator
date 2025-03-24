@@ -5,11 +5,7 @@
 #include <QtWidgets>
 #include <QDebug>
 
-#include "z80.h"
-#include "zxscreen.h"
-#include "zxkeyboard.h"
-#include "zxtape.h"
-#include "zxbeeper.h"
+#include "computer.h"
 
 #include "screenwidget.h"
 #include "cpuwidget.h"
@@ -22,44 +18,26 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    // Computer
-    Z80 *cpu = nullptr;
-    uint8_t mem[0x10000];
-    ZxScreen *scr;
-    ZxKeyboard *keyb;
-    ZxTape *tap;
-    ZxBeeper *beeper;
-
-    uint8_t port254;
-    uint8_t keyport[8] {0};
-
-    bool m_running = false;
-
-    void reset();
-    void step();
-    void run();
-
-    constexpr static int cpuFreq = 3'500'000;
-//    constexpr static int videoFreq = 7'375'000;
-    constexpr static int intFreq = 50;
+    Computer *computer = nullptr;
 
     // GUI
     ScreenWidget *scrWidget = nullptr;
     CpuWidget *cpuWidget = nullptr;
     TapeWidget *tapeWidget = nullptr;
     QLabel *status;
-    QElapsedTimer etimer;
-    double perf;
 
+    void reset();
+    void step();
+    void run();
 
+    void bindWidgets();
+    void unbindWidgets();
     void updateScreen();
 
-    void doStep();
-
 protected:
+    void closeEvent(QCloseEvent *) override;
     void keyPressEvent(QKeyEvent *e) override;
     void keyReleaseEvent(QKeyEvent *e) override;
-
 
 };
 

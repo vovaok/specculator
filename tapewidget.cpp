@@ -4,9 +4,8 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
-TapeWidget::TapeWidget(ZxTape *tape, QWidget *parent)
+TapeWidget::TapeWidget(QWidget *parent)
     : QWidget{parent}
-    , m_tape(tape)
 {
     setStyleSheet("QListWidget {min-width: 16em;} QPushButton {max-width: 2em; max-height: 2em;}");
 
@@ -53,15 +52,17 @@ TapeWidget::TapeWidget(ZxTape *tape, QWidget *parent)
     });
 
     connect(m_copyBtn, &QPushButton::clicked, this, [this](){
+        if (!m_tape)
+            return;
         QString filename = QFileDialog::getSaveFileName(nullptr, "Copy tape", QString(), "Tape (*.tap)");
         m_tape->m_filename = filename;
         m_tape->saveTap();
         openTap(filename);
     });
 
-    connect(m_stopBtn, &QPushButton::clicked, this, [this](){m_tape->stop();});
-    connect(m_playBtn, &QPushButton::clicked, this, [this](){m_tape->play();});
-    connect(m_recBtn, &QPushButton::clicked, this, [this](){m_tape->rec();});
+    connect(m_stopBtn, &QPushButton::clicked, this, [this](){if (m_tape) m_tape->stop();});
+    connect(m_playBtn, &QPushButton::clicked, this, [this](){if (m_tape) m_tape->play();});
+    connect(m_recBtn, &QPushButton::clicked, this, [this](){if (m_tape) m_tape->rec();});
     connect(m_upBtn, &QPushButton::clicked, this, &TapeWidget::raiseCurrentBlock);
     connect(m_downBtn, &QPushButton::clicked, this, &TapeWidget::lowerCurrentBlock);
     connect(m_delBtn, &QPushButton::clicked, this, &TapeWidget::deleteCurrentBlock);
@@ -82,6 +83,8 @@ void TapeWidget::open(QString filename)
 
 void TapeWidget::openTap(QString filename)
 {
+    if (!m_tape)
+        return;
     m_tape->openTap(filename);
     updateBlocks();
     m_tapeLabel->setText("Tape: " + QFileInfo(filename).baseName());
@@ -91,6 +94,8 @@ void TapeWidget::openTap(QString filename)
 
 void TapeWidget::updateState()
 {
+    if (!m_tape)
+        return;
     if (!isVisible())
         return;
 
@@ -122,6 +127,9 @@ void TapeWidget::showEvent(QShowEvent *)
 
 void TapeWidget::updateBlocks()
 {
+    if (!m_tape)
+        return;
+
     int tapeOffset = m_tape->m_ptr? m_tape->curOffset(): 0;
 
     m_list->clear();
@@ -197,6 +205,9 @@ void TapeWidget::updateBlocks()
 
 void TapeWidget::onStateChange()
 {
+    if (!m_tape)
+        return;
+
     bool stopped = m_tape->isStopped();
     m_stopBtn->setDown(stopped);
     m_playBtn->setDown(m_tape->isPlaying());
@@ -219,8 +230,8 @@ void TapeWidget::activateBlock(int idx)
 
 void TapeWidget::activateCurrentBlock()
 {
-//    if (!m_tape->isStopped())
-//        return;
+    if (!m_tape)
+        return;
 
     QListWidgetItem *item = m_list->currentItem();
     if (item)
@@ -246,6 +257,9 @@ void TapeWidget::activateCurrentBlock()
 
 void TapeWidget::swapBlocks(QListWidgetItem *item1, QListWidgetItem *item2)
 {
+    if (!m_tape)
+        return;
+
     int off1 = item1->data(Qt::UserRole).toInt();
     int len1 = item1->data(Qt::UserRole + 1).toInt();
     int off2 = item2->data(Qt::UserRole).toInt();
@@ -268,6 +282,9 @@ void TapeWidget::swapBlocks(QListWidgetItem *item1, QListWidgetItem *item2)
 
 void TapeWidget::raiseCurrentBlock()
 {
+    if (!m_tape)
+        return;
+
     if (!m_tape->isStopped())
         return;
     int idx = m_list->currentRow();
@@ -282,6 +299,9 @@ void TapeWidget::raiseCurrentBlock()
 
 void TapeWidget::lowerCurrentBlock()
 {
+    if (!m_tape)
+        return;
+
     if (!m_tape->isStopped())
         return;
     int idx = m_list->currentRow();
@@ -296,6 +316,9 @@ void TapeWidget::lowerCurrentBlock()
 
 void TapeWidget::deleteCurrentBlock()
 {
+    if (!m_tape)
+        return;
+
     if (!m_tape->isStopped())
         return;
     QListWidgetItem *item = m_list->currentItem();

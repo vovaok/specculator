@@ -8,110 +8,32 @@ using namespace std::literals;
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    cpu = new Z80(mem);
-    cpu->ioreq = [=](uint16_t addr, uint8_t &data, bool wr){
-        uint8_t port = addr & 0xFF;
-        if (wr)
-        {
-            if (port == 0xFE)
-            {
-                port254 = data;
-            }
-            else
-            {
-//                qDebug() << "WR" << Qt::hex << addr << "<-" << data;
-            }
-        }
-        else
-        {
-            if (port == 0xFE)
-            {
-                data = keyb->readKeys(addr >> 8);
-//                data.bit6 = mafon;
-            }
-            else
-            {
-                data = 0xFF;
-//                qDebug() << "RD" << Qt::hex << addr << "->" << data;
-            }
-        }
-    };
+    setStyleSheet("font-family: 'Consolas';");
 
+    scrWidget = new ScreenWidget();
+    scrWidget->setFocusPolicy(Qt::StrongFocus);
+    scrWidget->setFocus();
 
-    QFile f(":/rom/1982.rom");
-    if (f.open(QIODevice::ReadOnly))
-    {
-        int sz = f.read(reinterpret_cast<char*>(mem), 16384);
-        f.close();
-        if (sz != 16384)
-            qDebug() << "WARNING! unexpected ROM size";
-    }
-    else
-    {
-        qDebug() << "WARNING! ROM file not found :(";
-    }
+    cpuWidget = new CpuWidget;
+    cpuWidget->hide();
 
-    scr = new ZxScreen((char *)mem + 0x4000, 320, 240);
-    scr->bindBorderPort(&port254);
+    tapeWidget = new TapeWidget;
+    tapeWidget->hide();
 
-    keyb = new ZxKeyboard(keyport);
+    computer = new Computer();
+    connect(computer, &Computer::powerOn, this, &MainWindow::bindWidgets);
+    connect(computer, &Computer::powerOff, this, &MainWindow::unbindWidgets);
+    connect(computer, &Computer::vsync, this, &MainWindow::updateScreen);
+    computer->start();
 
-    tap = new ZxTape();
-    tap->bindPlayPort(keyport + 7);
-    tap->bindRecPort(&port254);
-
-    beeper = new ZxBeeper(&port254);
-
-
-//    cpu->test();
 
     QToolBar *toolbar = addToolBar("main");
     toolbar->addAction("reset", this, &MainWindow::reset)->setShortcut(QKeySequence("F2"));
     toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
     toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
     toolbar->addAction("tape", this, [this](){tapeWidget->setVisible(!tapeWidget->isVisible());})->setShortcut(QKeySequence("F7"));
-
-
-    toolbar->addAction("quick save", this, [=](){
-        QFile f("snap.z80");
-        if (f.open(QIODevice::WriteOnly))
-        {
-            f.write(reinterpret_cast<const char *>(mem), sizeof(mem));
-            QDataStream out(&f);
-            cpu->saveState(out);
-            out << port254;
-            f.close();
-        }
-    })->setShortcut(QKeySequence("F8"));
-
-    toolbar->addAction("quick load", this, [=](){
-        QFile f("snap.z80");
-        if (f.open(QIODevice::ReadOnly))
-        {
-            f.read(reinterpret_cast<char *>(mem), sizeof(mem));
-            QDataStream in(&f);
-            cpu->restoreState(in);
-            in >> port254;
-            f.close();
-        }
-    })->setShortcut(QKeySequence("F9"));
-
-
-
-    setStyleSheet("font-family: 'Consolas';");
-
-    scrWidget = new ScreenWidget();
-    scrWidget->bindScreen(scr);
-//    scrWidget->setFixedSize(320, 240);
-    scrWidget->setFocusPolicy(Qt::StrongFocus);
-    scrWidget->setFocus();
-
-    cpuWidget = new CpuWidget;
-    cpuWidget->hide();
-    cpuWidget->bindCpu(cpu);
-
-    tapeWidget = new TapeWidget(tap);
-    tapeWidget->hide();
+    toolbar->addAction("quick save", computer, &Computer::save)->setShortcut(QKeySequence("F8"));
+    toolbar->addAction("quick load", computer, &Computer::restore)->setShortcut(QKeySequence("F9"));
 
     status = new QLabel();
 
@@ -124,149 +46,67 @@ MainWindow::MainWindow(QWidget *parent)
 
     statusBar()->addWidget(status);
 
-    QTimer *timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &MainWindow::updateScreen);
-    timer->start(16);
-
-    reset();
-    run();
+//    QTimer *timer = new QTimer(this);
+//    connect(timer, &QTimer::timeout, this, &MainWindow::updateScreen);
+//    timer->start(20);
 }
 
 MainWindow::~MainWindow()
 {
-    delete cpu;
 }
 
 void MainWindow::reset()
 {
-    scr->clear();
-    memset(mem+0x4000, 0, 0xC000);
-    cpu->reset();
+    computer->reset();
     updateScreen();
 }
 
 void MainWindow::step()
 {
-    m_running = false;
+    computer->step();
     cpuWidget->show();
-
-    cpu->run();
-    doStep();
-    cpu->stop();
+    cpuWidget->updateRegs();
 }
 
 void MainWindow::run()
 {
-    m_running = true;
     cpuWidget->hide();
-    cpu->run();
 }
 
+void MainWindow::bindWidgets()
+{
+    scrWidget->bindScreen(computer->screen());
+    cpuWidget->bindCpu(computer->cpu());
+    tapeWidget->bindTape(computer->tape());
+}
+
+void MainWindow::unbindWidgets()
+{
+    scrWidget->bindScreen(nullptr);
+    cpuWidget->bindCpu(nullptr);
+    tapeWidget->bindTape(nullptr);
+}
 
 void MainWindow::updateScreen()
 {
-    bool turbo = keyb->keyState(Qt::Key_Escape);
+    if (scrWidget)
+        scrWidget->update();
 
-    QElapsedTimer perftimer;
-    if (etimer.isValid() || turbo)
-    {
-        qint64 frame_ns = etimer.nsecsElapsed();
-        qint64 N = frame_ns * (cpuFreq / 100000) / 10000;
-        etimer.start();
-        if (turbo)
-        {
-            N = cpuFreq / 2;
-//            etimer.invalidate();
-        }
-//        if (perf > 90)
-//        {
-//            N = N * 90 / perf;
-//        }
-        qint64 endT = cpu->cyclesCount() + N;
-        if (N > cpuFreq)
-            N = cpuFreq;
-
-        perftimer.start();
-        if (m_running)
-        {
-            while (cpu->cyclesCount() < endT)
-            {
-                if (endT - cpu->cyclesCount() > cpuFreq)
-                {
-                    qDebug() << "WUT??";
-                    break;
-                }
-
-                doStep();
-            }
-        }
-        qint64 run_ns = perftimer.nsecsElapsed();
-        perf = run_ns * 100.0 / frame_ns;
-    }
-    else
-    {
-        etimer.start();
-    }
-
-    if (cpuWidget)
-        cpuWidget->updateRegs();
-
-    // this is done synchronized with CPU cycles later:
-//    if (scrWidget)
-//        scrWidget->update();
+//    if (cpuWidget)
+//        cpuWidget->updateRegs();
 
     if (tapeWidget)
         tapeWidget->updateState();
 
 //    status->setText(QString("%1").arg(cpu->cyclesCount()));
-    status->setNum(perf);
+    status->setText(QString("CPU usage:%1%").arg(computer->cpuUsage(), 3));
+//    status->setText(QString("%1/%2").arg(run_us).arg(frame_us));
+    //    qDebug() << QString("%1/%2 - %3").arg(run_us).arg(frame_us).arg(NN);
 }
 
-void MainWindow::doStep()
+void MainWindow::closeEvent(QCloseEvent *)
 {
-    qint64 oldT = cpu->cyclesCount();
-    cpu->step();
-    qint64 cpuT = cpu->cyclesCount();
-    int dt_ns = (cpuT - oldT) * 10'000 / (cpuFreq / 100'000);
-
-    // generate interrupt
-    if (m_running)
-    {
-        int ot = oldT % (cpuFreq / intFreq);
-        int t = cpuT % (cpuFreq / intFreq);
-        if (ot > t) // interrupt on timer overflow
-        {
-            cpu->irq();
-            if (scrWidget)
-                scrWidget->update();
-        }
-    }
-
-    scr->update(cpuT);
-
-    //! @todo reimplement this as hook
-    if (cpu->programCounter() == 0x0556 && !tap->isPlaying())
-    {
-        tap->play();
-//        qDebug() << "Start the tape";
-    }
-    else if (cpu->programCounter() == 0x04C2 && !tap->isRecording())
-    {
-//        qDebug() << "Start tape recording";
-        tap->rec();
-    }
-
-    if (tap->isPlaying() || tap->isRecording())
-        tap->update(dt_ns);
-
-//    if (tap->isPlaying())
-//    {
-//        if (m_keyport[7] & 0x40)
-//            port254 |= 0x10;
-//        else
-//            port254 &= ~0x10;
-//    }
-    beeper->update(dt_ns);
+    computer->requestInterruption();
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)
@@ -274,7 +114,10 @@ void MainWindow::keyPressEvent(QKeyEvent *e)
     if (e->isAutoRepeat())
         return;
     int key = e->key();
-    keyb->setKeyState(key, true);
+    if (key == Qt::Key_Escape)
+        computer->turbo = true;
+    if (computer->keyboard())
+        computer->keyboard()->setKeyState(key, true);
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent *e)
@@ -282,5 +125,8 @@ void MainWindow::keyReleaseEvent(QKeyEvent *e)
     if (e->isAutoRepeat())
         return;
     int key = e->key();
-    keyb->setKeyState(key, false);
+    if (key == Qt::Key_Escape)
+        computer->turbo = false;
+    if (computer->keyboard())
+        computer->keyboard()->setKeyState(key, false);
 }

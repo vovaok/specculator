@@ -9,7 +9,8 @@ ScreenWidget::ScreenWidget(QWidget *parent) : QWidget(parent)
 void ScreenWidget::bindScreen(ZxScreen *scr)
 {
     m_scr = scr;
-    setMinimumSize(m_scr->frame().size());
+    if (m_scr)
+        setMinimumSize(m_scr->frame().size());
     update();
 }
 

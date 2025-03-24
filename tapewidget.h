@@ -12,7 +12,8 @@ class TapeWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit TapeWidget(ZxTape *tape, QWidget *parent = nullptr);
+    explicit TapeWidget(QWidget *parent = nullptr);
+    void bindTape(ZxTape *tape) {m_tape = tape;}
 
     void open(QString filename);
 
@@ -24,7 +25,7 @@ protected:
 signals:
 
 private:
-    ZxTape *m_tape;
+    ZxTape *m_tape = nullptr;
     QPushButton *m_openBtn;
     QPushButton *m_copyBtn;
     QLabel *m_tapeLabel;
