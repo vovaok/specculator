@@ -594,13 +594,13 @@ void Z80::execED()
         OP(AA, 4, ind());
         OP(AB, 4, outd());
 
-        OP(B0, 4, ldi(); if (blk = !!BC) {PC -= 2; T += 5;});
-        OP(B1, 4, cpi(); if (blk = (flags.P && !flags.Z)) {PC -= 2; T += 5;});
+        OP(B0, 4, ldi(); if ((blk = !!BC)) {PC -= 2; T += 5;});
+        OP(B1, 4, cpi(); if ((blk = (flags.P && !flags.Z))) {PC -= 2; T += 5;});
         OP(B2, 4, ini(); if (B) {PC -= 2; T += 5;});
         OP(B3, 4, outi(); if (B) {PC -= 2; T += 5;});
 
-        OP(B8, 4, ldd(); if (blk = !!BC) {PC -= 2; T += 5;});
-        OP(B9, 4, cpd(); if (blk = (flags.P && !flags.Z)) {PC -= 2; T += 5;});
+        OP(B8, 4, ldd(); if ((blk = !!BC)) {PC -= 2; T += 5;});
+        OP(B9, 4, cpd(); if ((blk = (flags.P && !flags.Z))) {PC -= 2; T += 5;});
         OP(BA, 4, ind(); if (B) {PC -= 2; T += 5;});
         OP(BB, 4, outd(); if (B) {PC -= 2; T += 5;});
 

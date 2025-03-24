@@ -38,13 +38,17 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
 
-    QFile f("1982.rom");
+    QFile f(":/rom/1982.rom");
     if (f.open(QIODevice::ReadOnly))
     {
         int sz = f.read(reinterpret_cast<char*>(mem), 16384);
         f.close();
         if (sz != 16384)
             qDebug() << "WARNING! unexpected ROM size";
+    }
+    else
+    {
+        qDebug() << "WARNING! ROM file not found :(";
     }
 
     scr = new ZxScreen((char *)mem + 0x4000, 320, 240);
@@ -161,7 +165,7 @@ void MainWindow::run()
 
 void MainWindow::updateScreen()
 {
-    bool turbo = keyb->keyState(27);
+    bool turbo = keyb->keyState(Qt::Key_Escape);
 
     QElapsedTimer perftimer;
     if (etimer.isValid() || turbo)
@@ -269,7 +273,7 @@ void MainWindow::keyPressEvent(QKeyEvent *e)
 {
     if (e->isAutoRepeat())
         return;
-    int key = e->nativeVirtualKey();
+    int key = e->key();
     keyb->setKeyState(key, true);
 }
 
@@ -277,6 +281,6 @@ void MainWindow::keyReleaseEvent(QKeyEvent *e)
 {
     if (e->isAutoRepeat())
         return;
-    int key = e->nativeVirtualKey();
+    int key = e->key();
     keyb->setKeyState(key, false);
 }

@@ -20,10 +20,6 @@ void ZxBeeper::update(int dt_ns)
     {
         m_buffer = (m_buffer == m_buffer1)? m_buffer2: m_buffer1;
         m_time_ns = m_time_ns % (m_audioBuf_ms * 1000000);
-//        if (m_buffer == m_buffer1)
-//            qDebug() << "sw to 1";
-//        else
-//            qDebug() << "sw to 2";
         m_wait.wakeAll();
     }
     else
@@ -56,9 +52,10 @@ void ZxBeeper::run()
         format = info.nearestFormat(format);
     }
 
+    constexpr int bufsize = m_bufferSize * sizeof(int16_t);
     audioOutput = new QAudioOutput(format);
     audioOutput->setVolume(0.5);
-    audioOutput->setBufferSize(sampleFreq * 2);
+//    audioOutput->setBufferSize(bufsize * 8);
     m_device = audioOutput->start();
 
     while (!isInterruptionRequested())
@@ -69,14 +66,18 @@ void ZxBeeper::run()
         moo.unlock();
 
         int16_t *buf = (m_buffer == m_buffer1)? m_buffer2: m_buffer1;
-//        if (buf == m_buffer1)
-//            qDebug() << "read from 1";
-//        else
-//            qDebug() << "read from 2";
-        m_device->write(reinterpret_cast<const char *>(buf), m_bufferSize * sizeof(int16_t));
 
-//        int cnt = (audioOutput->bufferSize() - audioOutput->bytesFree()) / 2;
-//        msleep(cnt * 500 / sampleFreq);
+        if (audioOutput->bytesFree() < bufsize)
+            while (audioOutput->bytesFree() < bufsize * 2)
+            {
+                m_device->write(QByteArray());
+//                qDebug() << "sleep";
+                msleep(m_audioBuf_ms);
+            }
+
+//        int cnt = audioOutput->bytesFree();
+        m_device->write(reinterpret_cast<const char *>(buf), bufsize);
+//        qDebug() << cnt << "-" << bufsize << "=" << audioOutput->bytesFree();
     }
 
     audioOutput->stop();

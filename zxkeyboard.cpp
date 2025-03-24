@@ -13,6 +13,16 @@ ZxKeyboard::ZxKeyboard(uint8_t *port) :
     m_keyMap['8']   = {Key_8};
     m_keyMap['9']   = {Key_9};
     m_keyMap['0']   = {Key_0};
+    m_keyMap['!']   = {Key_1};
+    m_keyMap['@']   = {Key_2};
+    m_keyMap['#']   = {Key_3};
+    m_keyMap['$']   = {Key_4};
+    m_keyMap['%']   = {Key_5};
+    m_keyMap['^']   = {Key_6};
+    m_keyMap['&']   = {Key_7};
+    m_keyMap['*']   = {Key_8};
+    m_keyMap['(']   = {Key_9};
+    m_keyMap[')']   = {Key_0};
     m_keyMap['Q']   = {Key_Q};
     m_keyMap['W']   = {Key_W};
     m_keyMap['E']   = {Key_E};
@@ -32,8 +42,9 @@ ZxKeyboard::ZxKeyboard(uint8_t *port) :
     m_keyMap['J']   = {Key_J};
     m_keyMap['K']   = {Key_K};
     m_keyMap['L']   = {Key_L};
-    m_keyMap[13]    = {Key_Enter};
-    m_keyMap[16]    = {Key_CS};
+    m_keyMap[Qt::Key_Enter]     = {Key_Enter};
+    m_keyMap[Qt::Key_Return]    = {Key_Enter};
+    m_keyMap[Qt::Key_Shift]     = {Key_CS};
     m_keyMap['Z']   = {Key_Z};
     m_keyMap['X']   = {Key_X};
     m_keyMap['C']   = {Key_C};
@@ -41,26 +52,33 @@ ZxKeyboard::ZxKeyboard(uint8_t *port) :
     m_keyMap['B']   = {Key_B};
     m_keyMap['N']   = {Key_N};
     m_keyMap['M']   = {Key_M};
-    m_keyMap[17]    = {Key_SS};
+    m_keyMap[Qt::Key_Control]   = {Key_SS};
     m_keyMap[' ']   = {Key_Space};
 
-    m_keyMap[8]     = {Key_CS, Key_0}; // backspace
-    m_keyMap[37]    = {Key_CS, Key_5}; // arrow left
-    m_keyMap[38]    = {Key_CS, Key_7}; // arrow up
-    m_keyMap[39]    = {Key_CS, Key_8}; // arrow right
-    m_keyMap[40]    = {Key_CS, Key_6}; // arrow down
-    m_keyMap[19]    = {Key_CS, Key_Space}; // break
-    m_keyMap[189]   = {Key_SS, Key_J}; // minus
-    m_keyMap[187]   = {Key_SS, Key_L}; // equal
-    m_keyMap[219]   = {Key_SS, Key_8}; // left bracket (parenthesis)
-    m_keyMap[221]   = {Key_SS, Key_9}; // right bracket (parenthesis)
-    m_keyMap[186]   = {Key_SS, Key_O}; // semicolon
-    m_keyMap[222]   = {Key_SS, Key_P}; // quote
-    m_keyMap[220]   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
-    m_keyMap[226]   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
-    m_keyMap[188]   = {Key_SS, Key_N}; // comma
-    m_keyMap[190]   = {Key_SS, Key_M}; // dot
-    m_keyMap[191]   = {Key_SS, Key_V}; // slash
+    m_keyMap[Qt::Key_Backspace]     = {Key_CS, Key_0}; // backspace
+    m_keyMap[Qt::Key_Left]    = {Key_CS, Key_5}; // arrow left
+    m_keyMap[Qt::Key_Up]    = {Key_CS, Key_7}; // arrow up
+    m_keyMap[Qt::Key_Right]    = {Key_CS, Key_8}; // arrow right
+    m_keyMap[Qt::Key_Down]    = {Key_CS, Key_6}; // arrow down
+    m_keyMap[Qt::Key_Pause]    = {Key_CS, Key_Space}; // break
+    m_keyMap['-']   = {Key_SS, Key_J}; // minus
+    m_keyMap['=']   = {Key_SS, Key_L}; // equal
+    m_keyMap['[']   = {Key_SS, Key_8}; // left bracket (parenthesis)
+    m_keyMap[']']   = {Key_SS, Key_9}; // right bracket (parenthesis)
+    m_keyMap[';']   = {Key_SS, Key_O}; // semicolon
+    m_keyMap['\'']   = {Key_SS, Key_7}; // quote
+    m_keyMap['\\']   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
+//    m_keyMap[226]   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
+    m_keyMap[',']   = {Key_SS, Key_N}; // comma
+    m_keyMap['.']   = {Key_SS, Key_M}; // dot
+    m_keyMap['/']   = {Key_SS, Key_V}; // slash
+    m_keyMap['_']   = {Key_SS, Key_0, _DisableShift};
+    m_keyMap['+']   = {Key_SS, Key_K, _DisableShift};
+    m_keyMap[':']   = {Key_SS, Key_Z, _DisableShift};
+    m_keyMap['"']   = {Key_SS, Key_P, _DisableShift};
+    m_keyMap['<']   = {Key_SS, Key_R, _DisableShift};
+    m_keyMap['>']   = {Key_SS, Key_T, _DisableShift};
+    m_keyMap['?']   = {Key_SS, Key_C, _DisableShift};
 }
 
 uint8_t ZxKeyboard::readKeys(uint8_t addr)
@@ -84,19 +102,28 @@ void ZxKeyboard::setKeyState(int keycode, bool state)
         m_keysPressed.remove(keycode);
     update();
 }
-
+#include <QDebug>
 void ZxKeyboard::update()
 {
     for (int i=0; i<8; i++)
         m_keyport[i] = 0;
 
+    bool disableShift = false;
     for (int key: m_keysPressed)
     {
         for (ZxKeyCode zxkey: m_keyMap[key])
         {
+            if (zxkey == _DisableShift)
+            {
+                disableShift = true;
+                continue;
+            }
             int idx = zxkey >> 5;
             uint8_t mask = zxkey & 0x1F;
             m_keyport[idx] |= mask;
         }
     }
+
+    if (disableShift)
+        m_keyport[0] &= ~0x01;
 }

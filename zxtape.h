@@ -36,7 +36,7 @@ private:
         PilotTone = 1,
         StartBit = 2,
         DataBits = 3,
-        Pause
+//        Pause
     } m_state = Idle;
 
     QString m_filename;

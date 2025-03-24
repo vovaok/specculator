@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/rom">
+        <file>1982.rom</file>
+    </qresource>
+</RCC>

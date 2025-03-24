@@ -45,6 +45,7 @@ enum ZxKeyCode
     Key_M   = 0xE4,
     Key_N   = 0xE8,
     Key_B   = 0xF0,
+    _DisableShift = 0xFE
 };
 
 class ZxKeyboard

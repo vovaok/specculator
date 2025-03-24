@@ -114,7 +114,7 @@ void TapeWidget::updateState()
     }
 }
 
-void TapeWidget::showEvent(QShowEvent *e)
+void TapeWidget::showEvent(QShowEvent *)
 {
 //    updateState();
     updateBlocks();

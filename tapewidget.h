@@ -19,7 +19,7 @@ public:
     void updateState();
 
 protected:
-    virtual void showEvent(QShowEvent *e) override;
+    virtual void showEvent(QShowEvent *) override;
 
 signals:
 
@@ -60,7 +60,7 @@ private:
             case 0x01: return "NumArray";
             case 0x02: return "SymArray";
             case 0x03: return "Bytes";
-            default: "Unknown";
+            default: return "Unknown";
             }
         }
 
