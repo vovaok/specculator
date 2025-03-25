@@ -51,6 +51,11 @@ private:
     uint32_t *m_videoptr = nullptr;
     int m_oldX = 0;
 
+    uint8_t *m_curData = nullptr;
+    ZxScreenAttr *m_curAttr = nullptr;
+    void setCurRow(int y);
+    uint32_t getPixel(int x) const;
+
     constexpr static int cyclesPerFrame = cpuFreq / 25;
     constexpr static int cyclesPerLine = cyclesPerFrame / 625;
     constexpr static int cyclesHSync = cyclesPerLine * 4 / 64;

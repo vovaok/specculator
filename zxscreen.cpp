@@ -46,27 +46,32 @@ void ZxScreen::update(qint64 T)
     {
         int line_T = frame_T % cyclesPerLine;
         int frm_x = (line_T - lineStartT) * videoFreq / cpuFreq - m_scol;
-        if (frm_x >= 0)
+
+        if (frm_x > m_w)
+            frm_x = m_w;
+        else if (frm_x < 0)
         {
-            if (frm_x > m_w)
-                frm_x = m_w;
-            for (; m_oldX < frm_x; m_oldX++)
-                m_bufBegin[m_oldX + frm_y * m_w] = getPixel(m_oldX - m_sx, frm_y - m_sy);
-            if (frm_x == m_w)
-                m_oldX = 0;
-//            uint32_t *last = m_bufBegin + frm_y * m_w + frm_x;
-//            while (m_videoptr < last)
-//                *m_videoptr++ = getPixel((++m_oldX) - m_sx, frm_y - m_sy);
-//            if (m_videoptr >= m_bufEnd)
-//                m_videoptr = m_bufBegin;
+            if (!m_oldX)
+                return;
+            frm_x = m_w;
+            frm_y--;
         }
-        else if (m_oldX && frm_y > 0)
-        {
-            int y = frm_y - 1;
-            for (; m_oldX < m_w; m_oldX++)
-                m_bufBegin[m_oldX + y * m_w] = getPixel(m_oldX - m_sx, y - m_sy);
-            m_oldX = 0;
-        }
+
+        int x = m_oldX - m_sx;
+        int y = frm_y - m_sy;
+        int cnt = frm_x - m_oldX;
+        uint32_t *vptr = m_bufBegin + frm_y * m_w + m_oldX;
+//        while (--cnt >= 0)
+//            *vptr++ = getPixel(x++, y);
+        setCurRow(y);
+        while (--cnt >= 0)
+            *vptr++ = getPixel(x++);
+        m_oldX = frm_x % m_w;
+
+//            for (; m_oldX < frm_x; m_oldX++)
+//                m_bufBegin[m_oldX + frm_y * m_w] = getPixel(m_oldX - m_sx, frm_y - m_sy);
+//            if (frm_x == m_w)
+//                m_oldX = 0;
     }
 }
 
@@ -80,27 +85,17 @@ uint32_t ZxScreen::getPixel(int x, int y) const
     if (x < 0 || y < 0 || x >= 256 || y >= 192)
         return m_borderColor;
 
-//    int bt = 32*(8*(y%8)+(y%64)/8+y/64*64)+x/8;
-//    int bit = 7-x%8;
-//    int abt = x/8+32*(y/8);
     int bt = ((((y & 7) << 3) + ((y & 63) >> 3) + (y & ~63)) << 5) + (x >> 3);
-    int bit = (x & 7);
+    int bit = (~x & 7);
     int abt = (x >> 3) + ((y << 2) & ~31);
+
     uint8_t byte = m_data[bt];
     ZxScreenAttr attr = m_attributes[abt];
-    bool pixel = byte & (0x80 >> bit);
+    bool pixel = ((byte >> bit) ^ (attr.flash & m_flash)) & 0x01;
 
-    uint8_t ink = attr.ink;
-    uint8_t paper = attr.paper;
-    uint32_t col;
-    if (attr.flash && m_flash)
-        std::swap(ink, paper);
     if (pixel)
-        col = zxColor(ink, attr.bright);
-    else
-        col = zxColor(paper, attr.bright);
-
-    return col;
+        return zxColor(attr.ink, attr.bright);
+    return zxColor(attr.paper, attr.bright);
 }
 
 QImage ZxScreen::screenshot() const
@@ -110,4 +105,32 @@ QImage ZxScreen::screenshot() const
         for (int x=0; x<256; x++)
             img.setPixel(x, y, getPixel(x, y));
     return img;
+}
+
+void ZxScreen::setCurRow(int y)
+{
+    if (y < 0 || y >= 192)
+    {
+        m_curData = nullptr;
+        return;
+    }
+
+    m_curData = m_data + ((((y & 7) << 3) + ((y & 63) >> 3) + (y & ~63)) << 5);
+    m_curAttr = m_attributes + ((y << 2) & ~31);
+}
+
+uint32_t ZxScreen::getPixel(int x) const
+{
+    if (!m_curData || x < 0 || x >= 256)
+        return m_borderColor;
+
+    int xoff = x >> 3;
+    int bit = (~x & 7);
+
+    uint8_t byte = m_curData[xoff];
+    ZxScreenAttr attr = m_curAttr[xoff];
+
+    if (((byte >> bit) ^ (attr.flash & m_flash)) & 0x01)
+        return zxColor(attr.ink, attr.bright);
+    return zxColor(attr.paper, attr.bright);
 }
