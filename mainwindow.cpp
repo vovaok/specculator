@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(computer, &Computer::powerOff, this, &MainWindow::unbindWidgets);
     connect(computer, &Computer::vsync, this, &MainWindow::updateScreen);
     computer->start();
+    computer->setPriority(QThread::TimeCriticalPriority);
 
 
     QToolBar *toolbar = addToolBar("main");
@@ -71,6 +72,7 @@ void MainWindow::step()
 void MainWindow::run()
 {
     cpuWidget->hide();
+    computer->resume();
 }
 
 void MainWindow::bindWidgets()

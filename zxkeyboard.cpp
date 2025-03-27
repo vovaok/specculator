@@ -66,8 +66,8 @@ ZxKeyboard::ZxKeyboard(uint8_t *port) :
     m_keyMap['[']   = {Key_SS, Key_8}; // left bracket (parenthesis)
     m_keyMap[']']   = {Key_SS, Key_9}; // right bracket (parenthesis)
     m_keyMap[';']   = {Key_SS, Key_O}; // semicolon
-    m_keyMap['\'']   = {Key_SS, Key_7}; // quote
-    m_keyMap['\\']   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
+    m_keyMap['\'']  = {Key_SS, Key_P}; // ['] is ["] // {Key_SS, Key_7}; // quote
+    m_keyMap['\\']  = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
 //    m_keyMap[226]   = {Key_SS, Key_CS}; // backslash (toggle extended cursor)
     m_keyMap[',']   = {Key_SS, Key_N}; // comma
     m_keyMap['.']   = {Key_SS, Key_M}; // dot

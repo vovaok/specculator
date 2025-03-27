@@ -46,7 +46,7 @@ TapeWidget::TapeWidget(QWidget *parent)
     lay->addWidget(m_list);
 
     connect(m_openBtn, &QPushButton::clicked, this, [this](){
-        QString filename = QFileDialog::getOpenFileName(nullptr, "Open tape", QString(), "Tape (*.tap)");
+        QString filename = QFileDialog::getOpenFileName(nullptr, "Open tape", QString(), "Tape (*.tap, *.TAP)");
         if (QFile::exists(filename))
             openTap(filename);
     });
@@ -54,7 +54,7 @@ TapeWidget::TapeWidget(QWidget *parent)
     connect(m_copyBtn, &QPushButton::clicked, this, [this](){
         if (!m_tape)
             return;
-        QString filename = QFileDialog::getSaveFileName(nullptr, "Copy tape", QString(), "Tape (*.tap)");
+        QString filename = QFileDialog::getSaveFileName(nullptr, "Copy tape", QString(), "Tape (*.tap, *.TAP)");
         m_tape->m_filename = filename;
         m_tape->saveTap();
         openTap(filename);
@@ -68,6 +68,11 @@ TapeWidget::TapeWidget(QWidget *parent)
     connect(m_delBtn, &QPushButton::clicked, this, &TapeWidget::deleteCurrentBlock);
 
     connect(m_list, &QListWidget::currentRowChanged, this, &TapeWidget::activateCurrentBlock);
+}
+
+void TapeWidget::bindTape(ZxTape *tape)
+{
+    m_tape = tape;
 
     QSettings sets;
     open(sets.value("tapeFile", "cassette.TAP").toString());

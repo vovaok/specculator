@@ -119,26 +119,26 @@ void Computer::run()
     reset();
     resume();
 
-//    QElapsedTimer etimer;
-    QElapsedTimer perftimer;
-//    etimer.start();
+    QElapsedTimer etimer;
 
     while (!isInterruptionRequested())
     {
-        perftimer.start();
-        int N = 70000;
+        qint64 frame_ns = base_frame_ns;
+        qint64 elapsed_ns = etimer.nsecsElapsed();
+        if (etimer.isValid() && !turbo)
+            frame_ns = elapsed_ns;
+        int N = frame_ns * (cpuFreq / 100000) / 10000;
+        etimer.start();
+
         qint64 endT = m_cpu->cyclesCount() + N;
-        do
+        while (m_cpu->cyclesCount() < endT && m_running)
             doStep();
-        while (m_cpu->cyclesCount() < endT && m_running);
-        qint64 run_ns = perftimer.nsecsElapsed();
 
-        qint64 frame_ns = N * 10000 / (cpuFreq / 100000);
-
-        m_cpuUsagePercent = run_ns * 100 / frame_ns;
+        qint64 run_ns = etimer.nsecsElapsed();
+        m_cpuUsagePercent = run_ns * 100 / elapsed_ns;
 
         if (!turbo)
-            usleep((frame_ns - run_ns) / 1000);
+            usleep((base_frame_ns - run_ns) / 1000);
 
         if (m_saveState)
         {
@@ -150,50 +150,6 @@ void Computer::run()
             restoreState();
             m_restoreState = false;
         }
-
-//        for (int i=0; i<N; i++)
-//            doStep();
-
-//        qint64 frame_ns = etimer.nsecsElapsed();
-////        qint64 N = frame_ns * (cpuFreq / 100000) / 10000;
-//        etimer.start();
-//        if (turbo)
-//        {
-//            N = cpuFreq / 2;
-////            etimer.invalidate();
-//        }
-////        if (perf > 90)
-////        {
-////            N = N * 90 / perf;
-////        }
-//        qint64 endT = m_cpu->cyclesCount() + N;
-//        if (N > cpuFreq)
-//            N = cpuFreq;
-
-//        perftimer.start();
-//        if (m_running)
-//        {
-//            while (m_cpu->cyclesCount() < endT)
-//            {
-//                if (endT - m_cpu->cyclesCount() > cpuFreq)
-//                {
-//                    qDebug() << "WUT??";
-//                    break;
-//                }
-
-//                doStep();
-//            }
-//        }
-//        qint64 run_ns = perftimer.nsecsElapsed();
-//        perf = run_ns * 100.0 / frame_ns;
-//        run_us = run_ns / 1000;
-//        frame_us = frame_ns / 1000;
-//        NN = N;
-//        }
-//        else
-//        {
-//            etimer.start();
-//        }
     }
 
     emit powerOff();

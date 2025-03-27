@@ -13,7 +13,7 @@ class TapeWidget : public QWidget
     Q_OBJECT
 public:
     explicit TapeWidget(QWidget *parent = nullptr);
-    void bindTape(ZxTape *tape) {m_tape = tape;}
+    void bindTape(ZxTape *tape);
 
     void open(QString filename);
 

@@ -56,11 +56,12 @@ private:
     uint8_t m_keyport[8] {0};
 
     bool m_running = false;
-    qreal m_cpuUsagePercent = 0;
+    int m_cpuUsagePercent = 0;
 
     constexpr static int cpuFreq = 3'500'000;
 //    constexpr static int videoFreq = 7'375'000;
     constexpr static int intFreq = 50;
+    constexpr static qint64 base_frame_ns = 1e+9 / intFreq;
 
     void doStep();
 
