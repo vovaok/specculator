@@ -51,7 +51,7 @@ void ZxScreen::update(qint64 T)
             frm_x = m_w;
         else if (frm_x < 0)
         {
-            if (!m_oldX)
+            if (!m_oldX || !frm_y)
                 return;
             frm_x = m_w;
             frm_y--;
@@ -61,17 +61,21 @@ void ZxScreen::update(qint64 T)
         int y = frm_y - m_sy;
         int cnt = frm_x - m_oldX;
         uint32_t *vptr = m_bufBegin + frm_y * m_w + m_oldX;
+
+        // the most stable but slower approach:
 //        while (--cnt >= 0)
-//            *vptr++ = getPixel(x++, y);
+//            m_image.setPixel(m_oldX++, frm_y, getPixel(x++, y));
+
+        // better performance:
+        while (--cnt >= 0)
+            *vptr++ = getPixel(x++, y);
+
+        // the best performance:
         setCurRow(y);
         while (--cnt >= 0)
             *vptr++ = getPixel(x++);
-        m_oldX = frm_x % m_w;
 
-//            for (; m_oldX < frm_x; m_oldX++)
-//                m_bufBegin[m_oldX + frm_y * m_w] = getPixel(m_oldX - m_sx, frm_y - m_sy);
-//            if (frm_x == m_w)
-//                m_oldX = 0;
+        m_oldX = frm_x % m_w;
     }
 }
 

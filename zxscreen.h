@@ -2,6 +2,7 @@
 #define ZXSCREEN_H
 
 #include <QImage>
+#include <QDebug>
 
 struct ZxScreenAttr
 {
@@ -15,6 +16,7 @@ class ZxScreen
 {
 public:
     ZxScreen(char *data, int width=320, int height=240);
+
     void bindBorderPort(uint8_t *port) {m_port = port;}
 
     void clear();

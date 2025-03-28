@@ -22,9 +22,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     computer = new Computer();
     connect(computer, &Computer::powerOn, this, &MainWindow::bindWidgets);
-    connect(computer, &Computer::powerOff, this, &MainWindow::unbindWidgets);
+    connect(computer, &Computer::powerOff, this, &MainWindow::unbindWidgets, Qt::DirectConnection);
     connect(computer, &Computer::vsync, this, &MainWindow::updateScreen);
     computer->start();
+//    connect(computer, &Computer::finished, computer, &Computer::deleteLater);
     computer->setPriority(QThread::TimeCriticalPriority);
 
 
@@ -54,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    delete computer;
 }
 
 void MainWindow::reset()
@@ -106,9 +108,11 @@ void MainWindow::updateScreen()
     //    qDebug() << QString("%1/%2 - %3").arg(run_us).arg(frame_us).arg(NN);
 }
 
-void MainWindow::closeEvent(QCloseEvent *)
+void MainWindow::closeEvent(QCloseEvent *e)
 {
     computer->requestInterruption();
+    computer->wait(1000);
+//    e->ignore();
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)

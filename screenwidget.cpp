@@ -17,6 +17,9 @@ void ScreenWidget::bindScreen(ZxScreen *scr)
 void ScreenWidget::paintEvent(QPaintEvent *)
 {
     QImage frame = m_scr? m_scr->frame(): QImage();
+    if (frame.isNull())
+        return;
+
     int fw = frame.width();
     int fh = frame.height();
     int maxw = height() * fw / fh;

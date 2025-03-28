@@ -7,6 +7,9 @@ Computer::Computer(QObject *parent)
 
 void Computer::reset()
 {
+    if (!m_cpu)
+        return;
+
     m_scr->clear();
     memset(m_mem+0x4000, 0, 0xC000);
     m_cpu->reset();
@@ -14,6 +17,9 @@ void Computer::reset()
 
 void Computer::step()
 {
+    if (!m_cpu)
+        return;
+
     m_running = false;
     m_cpu->run();
     doStep();
@@ -22,6 +28,9 @@ void Computer::step()
 
 void Computer::resume()
 {
+    if (!m_cpu)
+        return;
+
     m_running = true;
     m_cpu->run();
 }
@@ -137,7 +146,7 @@ void Computer::run()
         qint64 run_ns = etimer.nsecsElapsed();
         m_cpuUsagePercent = run_ns * 100 / elapsed_ns;
 
-        if (!turbo)
+        if (!turbo && run_ns < base_frame_ns)
             usleep((base_frame_ns - run_ns) / 1000);
 
         if (m_saveState)
@@ -152,13 +161,15 @@ void Computer::run()
         }
     }
 
+    m_running = false;
+
     emit powerOff();
 
-    safeDelete(m_cpu);
     safeDelete(m_scr);
     safeDelete(m_keyb);
     safeDelete(m_tap);
     safeDelete(m_beeper);
+    safeDelete(m_cpu);
     delete [] m_mem;
 }
 

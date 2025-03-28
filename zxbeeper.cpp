@@ -30,8 +30,9 @@ void ZxBeeper::update(int dt_ns)
 
 void ZxBeeper::requestInterruption()
 {
-    QThread::requestInterruption();
     m_wait.wakeAll();
+    QThread::requestInterruption();
+    wait(500);
 }
 
 void ZxBeeper::run()
@@ -64,6 +65,9 @@ void ZxBeeper::run()
         moo.lock();
         m_wait.wait(&moo);
         moo.unlock();
+
+        if (isInterruptionRequested())
+            break;
 
         int16_t *buf = (m_buffer == m_buffer1)? m_buffer2: m_buffer1;
 
