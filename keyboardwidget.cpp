@@ -92,6 +92,7 @@ void KeyboardWidget::touchEvent(QTouchEvent *e)
             if (btn)
             {
                 m_touchedButtons[tp.id()] = btn;
+                btn->setDown(true);
                 emit btn->pressed();
             }
             break;
@@ -101,6 +102,7 @@ void KeyboardWidget::touchEvent(QTouchEvent *e)
             {
                 QPushButton *btn = m_touchedButtons[tp.id()];
                 m_touchedButtons.remove(tp.id());
+                btn->setDown(false);
                 emit btn->released();
             }
 
