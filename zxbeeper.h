@@ -13,8 +13,7 @@ public:
     ZxBeeper(uint8_t *port);
     virtual ~ZxBeeper();
 
-    constexpr static int sampleFreq = 70000;
-    constexpr static int m_audioBuf_ms = 20;
+    constexpr static int m_audioBuf_ms = 50;
 
     void update(int dt_ns);
 
@@ -29,10 +28,11 @@ private:
     QIODevice *m_device = nullptr;
     QWaitCondition m_wait;
 
-    constexpr static int m_bufferSize = sampleFreq * m_audioBuf_ms / 1000;
-    int16_t m_buffer1[m_bufferSize] {0};
-    int16_t m_buffer2[m_bufferSize] {0};
-    int16_t *m_buffer = m_buffer1;
+    int m_sampleFreq = 70000;
+    int m_bufferSize = m_sampleFreq * m_audioBuf_ms / 1000;
+    int16_t *m_buffer1 = nullptr;
+    int16_t *m_buffer2 = nullptr;
+    int16_t *m_buffer = nullptr;
     uint m_time_ns = 0;
 };
 

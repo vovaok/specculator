@@ -14,8 +14,11 @@ ZxBeeper::~ZxBeeper()
 
 void ZxBeeper::update(int dt_ns)
 {
+    if (!m_buffer)
+        return;
+
     m_time_ns += dt_ns;
-    uint idx = m_time_ns * (sampleFreq / 1000) / 1000000;
+    int idx = m_time_ns * (m_sampleFreq / 1000) / 1000000;
     if (idx >= m_bufferSize)
     {
         m_buffer = (m_buffer == m_buffer1)? m_buffer2: m_buffer1;
@@ -39,7 +42,7 @@ void ZxBeeper::run()
 {
     // audio -------------------------------------------------
     QAudioFormat format;
-    format.setSampleRate(sampleFreq);
+    format.setSampleRate(m_sampleFreq);
     format.setChannelCount(1);
     format.setSampleSize(16);
     format.setCodec("audio/pcm");
@@ -53,7 +56,17 @@ void ZxBeeper::run()
         format = info.nearestFormat(format);
     }
 
-    constexpr int bufsize = m_bufferSize * sizeof(int16_t);
+    // obtain real sample frequency
+    m_sampleFreq = format.sampleRate();
+    m_bufferSize = m_sampleFreq * m_audioBuf_ms / 1000;
+
+    m_buffer1 = new int16_t[m_bufferSize];
+    m_buffer2 = new int16_t[m_bufferSize];
+    memset(m_buffer1, 0, m_bufferSize * sizeof(int16_t));
+    memset(m_buffer2, 0, m_bufferSize * sizeof(int16_t));
+    m_buffer = m_buffer1;
+
+    const int bufsize = m_bufferSize * sizeof(int16_t);
     audioOutput = new QAudioOutput(format);
     audioOutput->setVolume(0.5);
 //    audioOutput->setBufferSize(bufsize * 8);
@@ -86,4 +99,8 @@ void ZxBeeper::run()
 
     audioOutput->stop();
     delete audioOutput;
+
+    m_buffer = nullptr;
+    delete [] m_buffer1;
+    delete [] m_buffer2;
 }
