@@ -18,6 +18,7 @@ win32: {
 SOURCES += \
     computer.cpp \
     cpuwidget.cpp \
+    keyboardwidget.cpp \
     main.cpp \
     mainwindow.cpp \
     screenwidget.cpp \
@@ -33,6 +34,7 @@ SOURCES += \
 HEADERS += \
     computer.h \
     cpuwidget.h \
+    keyboardwidget.h \
     mainwindow.h \
     screenwidget.h \
     tapewidget.h \

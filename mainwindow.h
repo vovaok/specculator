@@ -10,6 +10,7 @@
 #include "screenwidget.h"
 #include "cpuwidget.h"
 #include "tapewidget.h"
+#include "keyboardwidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -24,6 +25,7 @@ public:
     ScreenWidget *scrWidget = nullptr;
     CpuWidget *cpuWidget = nullptr;
     TapeWidget *tapeWidget = nullptr;
+    KeyboardWidget *keybWidget = nullptr;
     QLabel *status;
 
     void reset();
@@ -38,7 +40,6 @@ protected:
     void closeEvent(QCloseEvent *) override;
     void keyPressEvent(QKeyEvent *e) override;
     void keyReleaseEvent(QKeyEvent *e) override;
-
 };
 
 #endif // MAINWINDOW_H

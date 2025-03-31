@@ -20,6 +20,9 @@ MainWindow::MainWindow(QWidget *parent)
     tapeWidget = new TapeWidget;
     tapeWidget->hide();
 
+    keybWidget = new KeyboardWidget;
+    keybWidget->hide();
+
     computer = new Computer();
     connect(computer, &Computer::powerOn, this, &MainWindow::bindWidgets);
     connect(computer, &Computer::powerOff, this, &MainWindow::unbindWidgets, Qt::DirectConnection);
@@ -34,17 +37,22 @@ MainWindow::MainWindow(QWidget *parent)
     toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
     toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
     toolbar->addAction("tape", this, [this](){tapeWidget->setVisible(!tapeWidget->isVisible());})->setShortcut(QKeySequence("F7"));
+    toolbar->addAction("keyboard", this, [this](){keybWidget->setVisible(!keybWidget->isVisible());})->setShortcut(QKeySequence("F3"));
     toolbar->addAction("quick save", computer, &Computer::save)->setShortcut(QKeySequence("F8"));
     toolbar->addAction("quick load", computer, &Computer::restore)->setShortcut(QKeySequence("F9"));
 
     status = new QLabel();
+
+    QVBoxLayout *vlay = new QVBoxLayout;
+    vlay->addWidget(scrWidget, 1);
+    vlay->addWidget(keybWidget);
 
     QHBoxLayout *lay = new QHBoxLayout;
     setCentralWidget(new QWidget());
     centralWidget()->setLayout(lay);
     lay->addWidget(tapeWidget);
     lay->addWidget(cpuWidget);
-    lay->addWidget(scrWidget, 1);
+    lay->addLayout(vlay, 1);
 
     statusBar()->addWidget(status);
 
@@ -82,6 +90,7 @@ void MainWindow::bindWidgets()
     scrWidget->bindScreen(computer->screen());
     cpuWidget->bindCpu(computer->cpu());
     tapeWidget->bindTape(computer->tape());
+    keybWidget->bindKeyboard(computer->keyboard());
 }
 
 void MainWindow::unbindWidgets()
@@ -89,6 +98,7 @@ void MainWindow::unbindWidgets()
     scrWidget->bindScreen(nullptr);
     cpuWidget->bindCpu(nullptr);
     tapeWidget->bindTape(nullptr);
+    keybWidget->bindKeyboard(nullptr);
 }
 
 void MainWindow::updateScreen()
@@ -101,6 +111,9 @@ void MainWindow::updateScreen()
 
     if (tapeWidget)
         tapeWidget->updateState();
+
+    if (keybWidget && keybWidget->isVisible())
+        keybWidget->updateState();
 
 //    status->setText(QString("%1").arg(cpu->cyclesCount()));
     status->setText(QString("CPU usage:%1%").arg(computer->cpuUsage(), 3));

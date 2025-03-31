@@ -62,6 +62,8 @@ public:
     void setKeyState(int keycode, bool state);
 
 private:
+    friend class KeyboardWidget;
+
     QMap<int, int> m_keysPressed;
     uint8_t *m_keyport;
     QMap<int, QVector<ZxKeyCode>> m_keyMap;

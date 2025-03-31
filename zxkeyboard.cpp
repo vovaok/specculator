@@ -102,7 +102,7 @@ void ZxKeyboard::setKeyState(int keycode, bool state)
         m_keysPressed.remove(keycode);
     update();
 }
-#include <QDebug>
+
 void ZxKeyboard::update()
 {
     for (int i=0; i<8; i++)
