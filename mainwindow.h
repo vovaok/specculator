@@ -27,6 +27,8 @@ public:
     TapeWidget *tapeWidget = nullptr;
     KeyboardWidget *keybWidget = nullptr;
     QLabel *status;
+    QToolBar *m_toolbar;
+    QGridLayout *m_layout;
 
     void reset();
     void step();
@@ -38,6 +40,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *) override;
+    void resizeEvent(QResizeEvent *e) override;
     void keyPressEvent(QKeyEvent *e) override;
     void keyReleaseEvent(QKeyEvent *e) override;
 };

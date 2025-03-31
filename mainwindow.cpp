@@ -8,7 +8,14 @@ using namespace std::literals;
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setStyleSheet("font-family: 'Consolas', 'Monospace';");
+    QFontDatabase::addApplicationFont(":/res/fonts/zxspectr.ttf");
+    QFontDatabase::addApplicationFont(":/res/fonts/ZXDTPSi.ttf");
+
+    QFile f(":/style.css");
+    f.open(QIODevice::ReadOnly);
+    QByteArray css = f.readAll();
+    f.close();
+    setStyleSheet(css);
 
     scrWidget = new ScreenWidget();
     scrWidget->setFocusPolicy(Qt::StrongFocus);
@@ -31,34 +38,34 @@ MainWindow::MainWindow(QWidget *parent)
 //    connect(computer, &Computer::finished, computer, &Computer::deleteLater);
     computer->setPriority(QThread::TimeCriticalPriority);
 
+    m_toolbar = addToolBar("main");
+    m_toolbar->addAction("reset", this, &MainWindow::reset)->setShortcut(QKeySequence("F2"));
+    m_toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
+    m_toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
+    m_toolbar->addAction("tape", this, [this](){tapeWidget->setVisible(!tapeWidget->isVisible());})->setShortcut(QKeySequence("F7"));
+    m_toolbar->addAction("keyboard", this, [this](){keybWidget->setVisible(!keybWidget->isVisible());})->setShortcut(QKeySequence("F3"));
+    m_toolbar->addAction("quick save", computer, &Computer::save)->setShortcut(QKeySequence("F8"));
+    m_toolbar->addAction("quick load", computer, &Computer::restore)->setShortcut(QKeySequence("F9"));
 
-    QToolBar *toolbar = addToolBar("main");
-    toolbar->addAction("reset", this, &MainWindow::reset)->setShortcut(QKeySequence("F2"));
-    toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
-    toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
-    toolbar->addAction("tape", this, [this](){tapeWidget->setVisible(!tapeWidget->isVisible());})->setShortcut(QKeySequence("F7"));
-    toolbar->addAction("keyboard", this, [this](){keybWidget->setVisible(!keybWidget->isVisible());})->setShortcut(QKeySequence("F3"));
-    toolbar->addAction("quick save", computer, &Computer::save)->setShortcut(QKeySequence("F8"));
-    toolbar->addAction("quick load", computer, &Computer::restore)->setShortcut(QKeySequence("F9"));
+    status = new QLabel(scrWidget);
+    status->move(4, 0);
+    status->setMinimumWidth(400);
 
-    status = new QLabel();
+    setContentsMargins(0, 0, 0, 0);
+    m_layout = new QGridLayout;
 
-    QVBoxLayout *vlay = new QVBoxLayout;
-    vlay->addWidget(scrWidget, 1);
-    vlay->addWidget(keybWidget);
+    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->addWidget(tapeWidget, 0, 0);
+    m_layout->addWidget(cpuWidget, 0, 1);
+    m_layout->addWidget(scrWidget, 0, 2);
+    m_layout->addWidget(keybWidget, 1, 1, 1, 3);
 
-    QHBoxLayout *lay = new QHBoxLayout;
     setCentralWidget(new QWidget());
-    centralWidget()->setLayout(lay);
-    lay->addWidget(tapeWidget);
-    lay->addWidget(cpuWidget);
-    lay->addLayout(vlay, 1);
+    centralWidget()->setLayout(m_layout);
 
-    statusBar()->addWidget(status);
-
-//    QTimer *timer = new QTimer(this);
-//    connect(timer, &QTimer::timeout, this, &MainWindow::updateScreen);
-//    timer->start(20);
+//#ifdef Q_OS_ANDROID
+//    QTimer::singleShot(200, [=](){showFullScreen();});
+//#endif
 }
 
 MainWindow::~MainWindow()
@@ -116,7 +123,7 @@ void MainWindow::updateScreen()
         keybWidget->updateState();
 
 //    status->setText(QString("%1").arg(cpu->cyclesCount()));
-    status->setText(QString("CPU usage:%1%").arg(computer->cpuUsage(), 3));
+    status->setText(QString("CPU:%1%").arg(computer->cpuUsage(), 3));
 //    status->setText(QString("%1/%2").arg(run_us).arg(frame_us));
     //    qDebug() << QString("%1/%2 - %3").arg(run_us).arg(frame_us).arg(NN);
 }
@@ -125,7 +132,38 @@ void MainWindow::closeEvent(QCloseEvent *e)
 {
     computer->requestInterruption();
     computer->wait(1000);
-//    e->ignore();
+    //    e->ignore();
+}
+
+void MainWindow::resizeEvent(QResizeEvent *e)
+{
+#ifdef Q_OS_ANDROID
+    bool album = e->size().width() >= e->size().height();
+    if (album)
+    {
+//        keybWidget->hide();
+        m_layout->addWidget(tapeWidget, 0, 0);
+        m_layout->addWidget(cpuWidget, 0, 1);
+        m_layout->addWidget(scrWidget, 0, 2);
+        m_layout->addWidget(keybWidget, 1, 0, 1, 3);
+        removeToolBar(m_toolbar);
+        addToolBar(Qt::LeftToolBarArea, m_toolbar);
+        m_toolbar->show();
+        showFullScreen();
+    }
+    else
+    {
+        m_layout->addWidget(tapeWidget, 1, 0);
+        m_layout->addWidget(cpuWidget, 0, 1, 2, 1);
+        m_layout->addWidget(scrWidget, 0, 0);
+        m_layout->addWidget(keybWidget, 2, 0, 1, 2);
+        keybWidget->show();
+        removeToolBar(m_toolbar);
+        addToolBar(Qt::TopToolBarArea, m_toolbar);
+        m_toolbar->show();
+        showMaximized();
+    }
+#endif
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)

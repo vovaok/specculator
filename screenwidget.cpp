@@ -33,6 +33,8 @@ void ScreenWidget::paintEvent(QPaintEvent *)
         r = QRect(0, dh/2, width(), maxh);
 
     QPainter p(this);
+    if (m_scr)
+        p.fillRect(rect(), m_scr->borderColor());
     p.setRenderHint(QPainter::SmoothPixmapTransform);
     p.drawImage(r, frame);
     p.end();

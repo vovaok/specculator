@@ -17,20 +17,13 @@ KeyboardWidget::KeyboardWidget(QWidget *parent)
 
     m_keys = QStringList{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
                          "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
-                         "A", "S", "D", "F", "G", "H", "J", "K", "L", "Enter",
-               "Caps\nShift", "Z", "X", "C", "V", "B", "N", "M", "Symbol\nShift", "Break\nSpace"};
+                         "A", "S", "D", "F", "G", "H", "J", "K", "L", "$",
+                         "#", "Z", "X", "C", "V", "B", "N", "M", "%", "\""};
 
     QGridLayout *lay = new QGridLayout;
+    lay->setSpacing(3);
+//    lay->setContentsMargins(0, 0, 0, 0);
     setLayout(lay);
-
-    setStyleSheet("QPushButton"
-                  "{"
-                  "max-width: 4em;"
-                  "max-height: 4em;"
-                  "min-width: 2em;"
-                  "min-height: 2em;"
-                  "font-size: small;"
-                  "}");
 
     for (int i=0; i<40; i++)
     {
@@ -79,6 +72,11 @@ bool KeyboardWidget::event(QEvent *event)
     default:
         return QWidget::event(event);
     }
+}
+
+void KeyboardWidget::resizeEvent(QResizeEvent *e)
+{
+    setStyleSheet(QString("font-size: %1px").arg(e->size().width() / 20));
 }
 
 void KeyboardWidget::touchEvent(QTouchEvent *e)

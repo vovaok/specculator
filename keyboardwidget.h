@@ -20,6 +20,7 @@ signals:
 
 protected:
     virtual bool event(QEvent *event) override;
+    virtual void resizeEvent(QResizeEvent *e) override;
     void touchEvent(QTouchEvent *e);
 
 private:

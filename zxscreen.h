@@ -31,6 +31,8 @@ public:
 
     QImage frame() const {return m_image;}
 
+    QColor borderColor() const {return QColor::fromRgb(m_borderColor);}
+
     //    void setPixel(int x, int y, uint8_t attr);
     //    void resetPixel(int x, int y, uint8_t attr);
 

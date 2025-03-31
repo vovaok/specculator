@@ -1,0 +1,71 @@
+QWidget
+{
+color: silver;
+/*font-family: 'Consolas', 'Monospace';*/
+font-family: 'ZX Sinclair for Desktop';
+}
+
+MainWindow
+{
+    background-color: black;
+}
+
+QToolBar
+{
+    background-color: black;
+
+}
+
+QToolButton
+{
+    background-color: blue;
+    height: 2em;
+}
+
+QPushButton
+{
+    background-color: qlineargradient(x1:0 y1:0, x2:0 y2:1, stop:0 silver, stop:1 grey);
+    color: black;
+
+    max-width: 5em;
+    max-height: 4em;
+    min-width: 2.5em;
+    min-height: 2.5em;
+
+/*    border-radius: 2px;*/
+}
+
+TapeWidget QPushButton
+{
+    min-height: 1.25em;
+    max-height: 1.25em;
+}
+
+KeyboardWidget QPushButton
+{
+    font-family: 'ZXSpectrum';
+    max-height: 1em;
+    min-height: 1em;
+    max-width: 1.75em;
+    min-width: 1.75em;
+}
+
+QPushButton::pressed
+{
+    background-color: qlineargradient(x1:0 y1:0, x2:0 y2:1, stop:0 #404040, stop:1 gray);
+}
+
+QLineEdit
+{
+    color: black;
+}
+
+QListWidget
+{
+    color: black;
+}
+
+QLabel
+{
+    color: white;
+}

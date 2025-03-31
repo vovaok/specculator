@@ -72,7 +72,8 @@ DISTFILES += \
     android/src/org/qtproject/example/serial/HandlerThreadHandler.java \
     android/src/org/qtproject/example/serial/Serial.java \
     android/src/org/qtproject/example/serial/USBMonitor.java \
-    android/src/org/qtproject/example/serial/USBVendorId.java
+    android/src/org/qtproject/example/serial/USBVendorId.java \
+    style.css
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 ANDROID_MIN_SDK_VERSION = "29"

@@ -2,4 +2,10 @@
     <qresource prefix="/rom">
         <file>1982.rom</file>
     </qresource>
+    <qresource prefix="/">
+        <file>style.css</file>
+        <file>res/fonts/COPYRIGHT.txt</file>
+        <file>res/fonts/ZXDTPSi.ttf</file>
+        <file>res/fonts/zxspectr.ttf</file>
+    </qresource>
 </RCC>
