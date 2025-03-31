@@ -8,7 +8,7 @@ using namespace std::literals;
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setStyleSheet("font-family: 'Consolas';");
+    setStyleSheet("font-family: 'Consolas', 'Monospace';");
 
     scrWidget = new ScreenWidget();
     scrWidget->setFocusPolicy(Qt::StrongFocus);
@@ -124,6 +124,8 @@ void MainWindow::keyPressEvent(QKeyEvent *e)
         computer->turbo = true;
     if (computer->keyboard())
         computer->keyboard()->setKeyState(key, true);
+    if (e->key() == Qt::Key_Back)
+        close();
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent *e)

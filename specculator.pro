@@ -49,3 +49,29 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     res.qrc
+
+#DEFINES += ANDROID_NDK
+#DEFINES += LOG_NDEBUG
+#DEFINES += ACCESS_RAW_DESCRIPTORS
+#DEFINES += SIZEOF_SIZE_T=8
+
+DISTFILES += \
+    android/AndroidManifest.xml \
+    android/build.gradle \
+    android/gradle.properties \
+    android/gradle/wrapper/gradle-wrapper.jar \
+    android/gradle/wrapper/gradle-wrapper.properties \
+    android/gradlew \
+    android/gradlew.bat \
+    android/res/values/libs.xml \
+    android/res/xml/device_filter.xml \
+    android/src/org/qtproject/example/serial/BuildCheck.java \
+    android/src/org/qtproject/example/serial/DeviceFilter.java \
+    android/src/org/qtproject/example/serial/HandlerThreadHandler.java \
+    android/src/org/qtproject/example/serial/Serial.java \
+    android/src/org/qtproject/example/serial/USBMonitor.java \
+    android/src/org/qtproject/example/serial/USBVendorId.java
+
+ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
+ANDROID_MIN_SDK_VERSION = "29"
+ANDROID_TARGET_SDK_VERSION = "29"
