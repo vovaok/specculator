@@ -1,6 +1,4 @@
 #include "keyboardwidget.h"
-#include <QPushButton>
-#include <QGridLayout>
 
 uint8_t KeyboardWidget::m_keymap[40] =
 {
@@ -20,15 +18,9 @@ KeyboardWidget::KeyboardWidget(QWidget *parent)
                          "A", "S", "D", "F", "G", "H", "J", "K", "L", "$",
                          "#", "Z", "X", "C", "V", "B", "N", "M", "%", "\""};
 
-    QGridLayout *lay = new QGridLayout;
-    lay->setSpacing(3);
-//    lay->setContentsMargins(0, 0, 0, 0);
-    setLayout(lay);
-
     for (int i=0; i<40; i++)
     {
-        QPushButton *btn = new QPushButton(m_keys[i]);
-        lay->addWidget(btn, i / 10, i % 10);
+        QPushButton *btn = new QPushButton(m_keys[i], this);
         int port = m_keymap[i] >> 5;
         int pin = m_keymap[i] & 0x1F;
 
@@ -48,17 +40,7 @@ void KeyboardWidget::updateState()
 {
     if (!m_keyb)
         return;
-
-//    for (int i=0; i<8; i++)
-//    {
-//        for (int j=0; j<5; j++)
-//        {
-
-//        }
-    //    }
 }
-
-#include <QDebug>
 
 bool KeyboardWidget::event(QEvent *event)
 {
@@ -76,7 +58,27 @@ bool KeyboardWidget::event(QEvent *event)
 
 void KeyboardWidget::resizeEvent(QResizeEvent *e)
 {
-    setStyleSheet(QString("font-size: %1px").arg(e->size().width() / 20));
+    QSize sz = e->size();
+    int ah = sz.width() * 3 / 10;
+    setFixedHeight(ah);
+
+    float bw = sz.width() / 11.f;
+    float bh = ah / 5.f;
+
+    int i = 0;
+    for (QObject *obj: children())
+    {
+        QPushButton *b = qobject_cast<QPushButton *>(obj);
+        int x = i % 10;
+        int y = i / 10;
+        b->resize(bw * 0.9f, bh * 0.9f);
+        b->setIconSize(b->size() * 2);
+        QFont f = font();
+        f.setPixelSize(b->height());
+        b->setFont(f);
+        b->move((x + 0.3f) * bw + ((y % 3) * bh/3), (y + 0.5f) * bh);
+        i++;
+    }
 }
 
 void KeyboardWidget::touchEvent(QTouchEvent *e)
@@ -110,4 +112,3 @@ void KeyboardWidget::touchEvent(QTouchEvent *e)
         }
     }
 }
-
