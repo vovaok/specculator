@@ -30,6 +30,9 @@ public:
     QToolBar *m_toolbar;
     QGridLayout *m_layout;
 
+    QAction *m_tapeAction, *m_keybAction;
+    QToolButton *m_turboBtn;
+
     void reset();
     void step();
     void run();

@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     QFontDatabase::addApplicationFont(":/res/fonts/zxspectr.ttf");
     QFontDatabase::addApplicationFont(":/res/fonts/ZXDTPSi.ttf");
+    QFontDatabase::addApplicationFont(":/res/fonts/fontawesome-webfont.ttf");
 
     QFile f(":/style.css");
     f.open(QIODevice::ReadOnly);
@@ -39,13 +40,38 @@ MainWindow::MainWindow(QWidget *parent)
     computer->setPriority(QThread::TimeCriticalPriority);
 
     m_toolbar = addToolBar("main");
-    m_toolbar->addAction("reset", this, &MainWindow::reset)->setShortcut(QKeySequence("F2"));
-    m_toolbar->addAction("step", this, &MainWindow::step)->setShortcut(QKeySequence("F10"));
-    m_toolbar->addAction("run", this, &MainWindow::run)->setShortcut(QKeySequence("F5"));
-    m_toolbar->addAction("tape", this, [this](){tapeWidget->setVisible(!tapeWidget->isVisible());})->setShortcut(QKeySequence("F7"));
-    m_toolbar->addAction("keyboard", this, [this](){keybWidget->setVisible(!keybWidget->isVisible());})->setShortcut(QKeySequence("F3"));
-    m_toolbar->addAction("quick save", computer, &Computer::save)->setShortcut(QKeySequence("F8"));
-    m_toolbar->addAction("quick load", computer, &Computer::restore)->setShortcut(QKeySequence("F9"));
+//    m_toolbar->setFloatable(false);
+    m_toolbar->setMovable(false);
+    QAction *act;
+    act = m_toolbar->addAction(QChar(0xf021), this, &MainWindow::reset);
+    act->setToolTip("Reset");
+    act->setShortcut(QKeySequence("F2"));
+    act = m_toolbar->addAction(QChar(0xf2db/*0xf051*//*0xf188*/), this, &MainWindow::step);
+    act->setToolTip("Debug");
+    act->setShortcut(QKeySequence("F10"));
+    act = m_toolbar->addAction(QChar(0xf01d), this, &MainWindow::run);
+    act->setToolTip("Run computer");
+    act->setShortcut(QKeySequence("F5"));
+    act = m_toolbar->addAction(QChar(0xf025), tapeWidget, &QWidget::setVisible);
+    act->setToolTip("Cassette tape");
+    act->setCheckable(true);
+    m_tapeAction = act;
+    act = m_toolbar->addAction(QChar(0xf11c), keybWidget, &QWidget::setVisible);
+    act->setToolTip("ZX keyboard");
+    act->setCheckable(true);
+    m_keybAction = act;
+    act = m_toolbar->addAction(QChar(0xf0c7), computer, &Computer::save);
+    act->setToolTip("Save state");
+    act->setShortcut(QKeySequence("F8"));
+    act = m_toolbar->addAction(QChar(0xf01e/*0xf1da*/), computer, &Computer::restore);
+    act->setToolTip("Restore state");
+    act->setShortcut(QKeySequence("F9"));
+    m_turboBtn = new QToolButton();
+    m_turboBtn->setText(QChar(0xf135));
+    m_turboBtn->setToolTip("Turbo");
+    m_toolbar->addWidget(m_turboBtn);
+//    act = m_toolbar->addAction(QChar(0xf135), computer, &Computer::restore);
+//    act->setToolTip("Turbo");
 
     status = new QLabel(scrWidget);
     status->move(4, 0);
@@ -53,12 +79,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     setContentsMargins(0, 0, 0, 0);
     m_layout = new QGridLayout;
-
     m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->setSpacing(0);
     m_layout->addWidget(tapeWidget, 0, 0);
     m_layout->addWidget(cpuWidget, 0, 1);
     m_layout->addWidget(scrWidget, 0, 2);
-    m_layout->addWidget(keybWidget, 1, 1, 1, 3);
+    m_layout->addWidget(keybWidget, 1, 0, 1, 3);
 
     setCentralWidget(new QWidget());
     centralWidget()->setLayout(m_layout);
@@ -110,6 +136,8 @@ void MainWindow::unbindWidgets()
 
 void MainWindow::updateScreen()
 {
+    computer->turbo = m_turboBtn->isDown();
+
     if (scrWidget)
         scrWidget->update();
 
@@ -157,6 +185,7 @@ void MainWindow::resizeEvent(QResizeEvent *e)
         m_layout->addWidget(cpuWidget, 0, 1, 2, 1);
         m_layout->addWidget(scrWidget, 0, 0);
         m_layout->addWidget(keybWidget, 2, 0, 1, 2);
+        m_keybAction->setChecked(true);
         keybWidget->show();
         removeToolBar(m_toolbar);
         addToolBar(Qt::TopToolBarArea, m_toolbar);

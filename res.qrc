@@ -7,5 +7,6 @@
         <file>res/fonts/COPYRIGHT.txt</file>
         <file>res/fonts/ZXDTPSi.ttf</file>
         <file>res/fonts/zxspectr.ttf</file>
+        <file>res/fonts/fontawesome-webfont.ttf</file>
     </qresource>
 </RCC>

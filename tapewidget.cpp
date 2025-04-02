@@ -9,20 +9,20 @@ TapeWidget::TapeWidget(QWidget *parent)
 {
     setStyleSheet("QListWidget {min-width: 16em;} QPushButton {max-width: 2em; max-height: 2em;}");
 
-    m_openBtn = new QPushButton("Open");
-    m_copyBtn = new QPushButton("Copy");
+    (m_openBtn = new QPushButton(QChar(0xF07C)))->setToolTip("Open tape");
+    (m_copyBtn = new QPushButton(QChar(0xF0C5)))->setToolTip("Copy tape");
     m_tapeLabel = new QLabel();
 
     m_list = new QListWidget;
     m_label = new QLabel;
     m_progress = new QProgressBar;
 
-    m_playBtn = new QPushButton(">");
-    m_stopBtn = new QPushButton("[]");
-    m_recBtn = new QPushButton("o");
-    m_upBtn = new QPushButton("^");
-    m_downBtn = new QPushButton("v");
-    m_delBtn = new QPushButton("x");
+    (m_playBtn = new QPushButton(QChar(0xF04B)))->setToolTip("Play");
+    (m_stopBtn = new QPushButton(QChar(0xF04D)))->setToolTip("Stop");
+    (m_recBtn = new QPushButton(QChar(0xF111/*0xF192*/)))->setToolTip("Rec");
+    (m_upBtn = new QPushButton(QChar(0xF0DE)))->setToolTip("Move up");
+    (m_downBtn = new QPushButton(QChar(0xF0DD)))->setToolTip("Move down");
+    (m_delBtn = new QPushButton(QChar(0xF014)))->setToolTip("Delete block");
 
     QHBoxLayout *tapelay = new QHBoxLayout;
     tapelay->addWidget(m_tapeLabel);
