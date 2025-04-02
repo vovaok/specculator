@@ -11,6 +11,7 @@ uint8_t KeyboardWidget::m_keymap[40] =
 KeyboardWidget::KeyboardWidget(QWidget *parent)
     : QWidget{parent}
 {
+    setAttribute(Qt::WA_StyledBackground);
     setAttribute(Qt::WA_AcceptTouchEvents, true);
 
     m_keys = QStringList{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0",

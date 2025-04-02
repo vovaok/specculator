@@ -13,6 +13,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *e);
+    virtual QSize sizeHint() const override {return m_scr? m_scr->frame().size() * 2: QSize(640, 480);}
 
 private:
     ZxScreen *m_scr = nullptr;

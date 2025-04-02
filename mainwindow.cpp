@@ -89,6 +89,8 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(new QWidget());
     centralWidget()->setLayout(m_layout);
 
+    setProperty("orient", "landscape");
+
 //#ifdef Q_OS_ANDROID
 //    QTimer::singleShot(200, [=](){showFullScreen();});
 //#endif
@@ -165,34 +167,41 @@ void MainWindow::closeEvent(QCloseEvent *e)
 
 void MainWindow::resizeEvent(QResizeEvent *e)
 {
-#ifdef Q_OS_ANDROID
+//#ifdef Q_OS_ANDROID
     bool album = e->size().width() >= e->size().height();
     if (album)
     {
+        setProperty("orient", "landscape");
 //        keybWidget->hide();
         m_layout->addWidget(tapeWidget, 0, 0);
         m_layout->addWidget(cpuWidget, 0, 1);
         m_layout->addWidget(scrWidget, 0, 2);
         m_layout->addWidget(keybWidget, 1, 0, 1, 3);
+        m_layout->setColumnStretch(2, 1);
+        m_layout->setRowStretch(0, 0);
         removeToolBar(m_toolbar);
         addToolBar(Qt::LeftToolBarArea, m_toolbar);
         m_toolbar->show();
-        showFullScreen();
+//        showFullScreen();
     }
     else
     {
+        setProperty("orient", "portrait");
         m_layout->addWidget(tapeWidget, 1, 0);
         m_layout->addWidget(cpuWidget, 0, 1, 2, 1);
         m_layout->addWidget(scrWidget, 0, 0);
         m_layout->addWidget(keybWidget, 2, 0, 1, 2);
+        m_layout->setColumnStretch(2, 0);
+        m_layout->setRowStretch(0, 1);
         m_keybAction->setChecked(true);
         keybWidget->show();
         removeToolBar(m_toolbar);
         addToolBar(Qt::TopToolBarArea, m_toolbar);
         m_toolbar->show();
-        showMaximized();
+//        showMaximized();
     }
-#endif
+    style()->polish(m_toolbar);
+//#endif
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)

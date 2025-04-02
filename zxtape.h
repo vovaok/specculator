@@ -23,6 +23,8 @@ public:
     void stop();
     bool isStopped() const {return !m_playing && !m_recording;}
 
+    bool isPilotTone() const {return m_state == PilotTone;}
+
     void update(int dt_ns);
 
     bool isChanged();

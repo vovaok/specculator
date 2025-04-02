@@ -7,7 +7,8 @@
 TapeWidget::TapeWidget(QWidget *parent)
     : QWidget{parent}
 {
-    setStyleSheet("QListWidget {min-width: 16em;} QPushButton {max-width: 2em; max-height: 2em;}");
+    setStyleSheet("/*QListWidget {min-width: 16em;} */QPushButton {max-width: 2em; max-height: 1.5em;}");
+//    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     (m_openBtn = new QPushButton(QChar(0xF07C)))->setToolTip("Open tape");
     (m_copyBtn = new QPushButton(QChar(0xF0C5)))->setToolTip("Copy tape");
@@ -114,14 +115,29 @@ void TapeWidget::updateState()
         m_oldState = state;
     }
 
-    if (m_tape->isPlaying())
+    if (m_tape->isPlaying() || m_tape->isRecording())
     {
         m_progress->setValue(m_tape->curOffset() - m_curBlockOffset);
+        float pr = m_progress->value() / (float)m_progress->maximum();
+        if (pr > 0.999f)
+            pr = 0.999f;
+        static float t = 0;
+        t += 0.005f;
+        if (t > 0.1f)
+            t -= 0.1f;
+        if (m_tape->m_state == ZxTape::PilotTone)
+            m_list->setStyleSheet(QString("QListWidget::item:selected {background-color: qlineargradient(mode:logical, spread:repeat, x1:%1 y1:0, x2:%2 y2:0, stop:0 #0CC, stop:.5 #0CC, stop:.51 #C00, stop:1 #C00);}").arg(t).arg(t+0.1));
+        else
+            m_list->setStyleSheet(QString("QListWidget::item:selected {background-color: qlineargradient(x1:0 y1:0, x2:1 y2:0, stop:0 #88C, stop:%1 #88C, stop:%2 #CC0, stop:1 #CC0);}").arg(pr).arg(pr+0.001));
     }
-    else if (m_tape->isRecording())
+    else
     {
-        m_progress->setValue(m_tape->curOffset() - m_curBlockOffset);
+        m_list->setStyleSheet("");
     }
+//    else if (m_tape->isRecording())
+//    {
+//        m_progress->setValue(m_tape->curOffset() - m_curBlockOffset);
+//    }
 }
 
 void TapeWidget::showEvent(QShowEvent *)
@@ -194,10 +210,12 @@ void TapeWidget::updateBlocks()
                 m_curBlockOffset = off;
                 m_curBlockLength = hdr->dataLength + 21;
                 m_progress->setMaximum(m_curBlockLength);
+                m_list->setCurrentRow(m_list->count() - 1);
             }
             else
             {
                 m_label->setText("saving...");
+                m_list->setCurrentRow(-1);
             }
         }
         else
