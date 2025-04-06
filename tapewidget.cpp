@@ -16,7 +16,9 @@ TapeWidget::TapeWidget(QWidget *parent)
 
     m_list = new QListWidget;
     m_label = new QLabel;
+    m_label->hide();
     m_progress = new QProgressBar;
+    m_progress->hide();
 
     (m_playBtn = new QPushButton(QChar(0xF04B)))->setToolTip("Play");
     (m_stopBtn = new QPushButton(QChar(0xF04D)))->setToolTip("Stop");
@@ -198,30 +200,31 @@ void TapeWidget::updateBlocks()
 
     if (m_tape->isRecording())
     {
+        bool haveItemForSaving = m_list->count();
         QListWidgetItem *item = m_list->item(m_list->count() - 1);
         if (item)
         {
             int off = item->data(Qt::UserRole).toInt();
             int len = item->data(Qt::UserRole + 1).toInt();
+            haveItemForSaving = item->data(Qt::UserRole + 2).toBool();
             const TapHeader *hdr = reinterpret_cast<const TapHeader *>(m_tape->begin() + off + 2);
             if (hdr->blockType == 0x00 && len == 21)
             {
+                haveItemForSaving = true;
                 m_label->setText(item->text());
                 m_curBlockOffset = off;
                 m_curBlockLength = hdr->dataLength + 21;
                 m_progress->setMaximum(m_curBlockLength);
                 m_list->setCurrentRow(m_list->count() - 1);
             }
-            else
-            {
-                m_label->setText("saving...");
-                m_list->setCurrentRow(-1);
-            }
         }
-        else
+
+        if (!haveItemForSaving)
         {
-            m_label->setText("saving...");
-            m_progress->setValue(0);
+            QListWidgetItem *item = new QListWidgetItem(/*icon,*/ "saving...", m_list);
+            item->setData(Qt::UserRole + 2, true);
+            m_list->setCurrentRow(m_list->count() - 1);
+//                m_label->setText("saving...");
         }
     }
 }
