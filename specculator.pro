@@ -22,6 +22,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     screenwidget.cpp \
+    sinclairbasic.cpp \
     tapewidget.cpp \
     z80.cpp \
     z80_alu.cpp \
@@ -37,6 +38,7 @@ HEADERS += \
     keyboardwidget.h \
     mainwindow.h \
     screenwidget.h \
+    sinclairbasic.h \
     tapewidget.h \
     z80.h \
     zxbeeper.h \

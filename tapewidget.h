@@ -7,6 +7,7 @@
 #include <QProgressBar>
 #include <QListWidget>
 #include "zxtape.h"
+#include "sinclairbasic.h"
 
 class TapeWidget : public QWidget
 {
@@ -67,7 +68,18 @@ private:
 
         QString name() const
         {
-            return QString::fromLatin1(m_name, 10);
+            QString s;
+            for (int i=0; i<10; i++)
+            {
+                uint8_t b = m_name[i];
+                switch (b)
+                {
+                case 0x08: s.chop(1); break;
+                case 0x09: s.append(' ');
+                default: s += zxChar(b);
+                }
+            }
+            return s;
         }
 
         QString toString() const
