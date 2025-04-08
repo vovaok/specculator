@@ -85,7 +85,7 @@ void KeyboardWidget::updateLayout(QSize sz)
             continue;
         int x = i % 10;
         int y = i / 10;
-        b->setStyleSheet(QString("font-size: %1px; height: %2px;").arg(static_cast<int>(bh)).arg(sz.height() / 6));
+        b->setStyleSheet(QString("font-size: %1px; height: %2px; min-height: %2px;").arg(static_cast<int>(bh)).arg(sz.height() / 6));
         b->move(bx + (x + 0.3f) * bw + ((y % 3) * bh/3), (y + 0.2f) * b->height() * 1.2);
         i++;
     }

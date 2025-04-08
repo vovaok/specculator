@@ -26,7 +26,7 @@ public:
     void saveState(QDataStream &out);
     void restoreState(QDataStream &in);
 
-    std::function<void(uint16_t addr, uint8_t &data, bool wr)> ioreq;
+    std::function<void(uint16_t addr, uint8_t &data, bool wr)> ioreq = [=](uint16_t, uint8_t &, bool){};
 //    std::function<void(void)> iack;
 
     // for internal use:

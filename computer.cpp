@@ -216,6 +216,7 @@ void Computer::doStep()
 //        else
 //            port254 &= ~0x10;
 //    }
+
     m_beeper->update(dt_ns);
 }
 

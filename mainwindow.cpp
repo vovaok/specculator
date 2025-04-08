@@ -101,9 +101,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 //    setProperty("orient", "landscape");
 
-//#ifdef Q_OS_ANDROID
-//    QTimer::singleShot(200, [=](){showFullScreen();});
-//#endif
+//    QTimer *timer = new QTimer(this);
+//    connect(timer, &QTimer::timeout, this, &MainWindow::updateScreen);
+//    timer->start(20);
 }
 
 MainWindow::~MainWindow()
