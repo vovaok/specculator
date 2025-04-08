@@ -52,6 +52,7 @@ bool KeyboardWidget::event(QEvent *event)
     case QEvent::TouchUpdate:
         touchEvent(dynamic_cast<QTouchEvent *>(event));
         return true;
+    case QEvent::Show: updateLayout(size());
     default:
         return QWidget::event(event);
     }
@@ -59,25 +60,33 @@ bool KeyboardWidget::event(QEvent *event)
 
 void KeyboardWidget::resizeEvent(QResizeEvent *e)
 {
-    QSize sz = e->size();
-    int ah = sz.width() * 3 / 10;
-    setFixedHeight(ah);
+    updateLayout(e->size());
+}
+
+void KeyboardWidget::updateLayout(QSize sz)
+{
+    int ah = sz.width() * 5 / 20;
 
     float bw = sz.width() / 11.f;
-    float bh = ah / 5.f;
+    float bh = sz.height() / 5.f;
+    if (ah < sz.height())
+        bh = ah / 5.f;
+
+    if (bw > bh * 1.8)
+        bw = bh * 1.8;
+
+    int bx = (sz.width() - bw * 11) / 2;
 
     int i = 0;
     for (QObject *obj: children())
     {
         QPushButton *b = qobject_cast<QPushButton *>(obj);
+        if (!b)
+            continue;
         int x = i % 10;
         int y = i / 10;
-        b->resize(bw * 0.9f, bh * 0.9f);
-        b->setIconSize(b->size() * 2);
-        QFont f = font();
-        f.setPixelSize(b->height());
-        b->setFont(f);
-        b->move((x + 0.3f) * bw + ((y % 3) * bh/3), (y + 0.5f) * bh);
+        b->setStyleSheet(QString("font-size: %1px; height: %2px;").arg(static_cast<int>(bh)).arg(sz.height() / 6));
+        b->move(bx + (x + 0.3f) * bw + ((y % 3) * bh/3), (y + 0.2f) * b->height() * 1.2);
         i++;
     }
 }
@@ -92,6 +101,7 @@ void KeyboardWidget::touchEvent(QTouchEvent *e)
         switch (tp.state())
         {
         case Qt::TouchPointPressed:
+//            setStyleSheet("background-color: white;");
             if (btn)
             {
                 m_touchedButtons[tp.id()] = btn;
@@ -101,6 +111,7 @@ void KeyboardWidget::touchEvent(QTouchEvent *e)
             break;
 
         case Qt::TouchPointReleased:
+//            setStyleSheet("");
             if (m_touchedButtons.contains(tp.id()))
             {
                 QPushButton *btn = m_touchedButtons[tp.id()];

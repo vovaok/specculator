@@ -73,6 +73,12 @@ MainWindow::MainWindow(QWidget *parent)
 //    act = m_toolbar->addAction(QChar(0xf135), computer, &Computer::restore);
 //    act->setToolTip("Turbo");
 
+    if(QToolButton *button = m_toolbar->findChild<QToolButton *>("qt_toolbar_ext_button"))
+    {
+        button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        button->setText(QChar(0xf141));
+    }
+
     status = new QLabel(scrWidget);
     status->move(4, 0);
     status->setMinimumWidth(400);
@@ -89,7 +95,11 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(new QWidget());
     centralWidget()->setLayout(m_layout);
 
-    setProperty("orient", "landscape");
+#if defined(Q_OS_ANDROID)
+    resize(QApplication::desktop()->screenGeometry().size());
+#endif
+
+//    setProperty("orient", "landscape");
 
 //#ifdef Q_OS_ANDROID
 //    QTimer::singleShot(200, [=](){showFullScreen();});
@@ -167,7 +177,6 @@ void MainWindow::closeEvent(QCloseEvent *e)
 
 void MainWindow::resizeEvent(QResizeEvent *e)
 {
-//#ifdef Q_OS_ANDROID
     bool album = e->size().width() >= e->size().height();
     if (album)
     {
@@ -182,7 +191,9 @@ void MainWindow::resizeEvent(QResizeEvent *e)
         removeToolBar(m_toolbar);
         addToolBar(Qt::LeftToolBarArea, m_toolbar);
         m_toolbar->show();
-//        showFullScreen();
+#ifdef Q_OS_ANDROID
+        showFullScreen();
+#endif
     }
     else
     {
@@ -198,10 +209,11 @@ void MainWindow::resizeEvent(QResizeEvent *e)
         removeToolBar(m_toolbar);
         addToolBar(Qt::TopToolBarArea, m_toolbar);
         m_toolbar->show();
-//        showMaximized();
+#ifdef Q_OS_ANDROID
+        showMaximized();
+#endif
     }
     style()->polish(m_toolbar);
-//#endif
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e)

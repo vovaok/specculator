@@ -29,6 +29,8 @@ private:
     QStringList m_keys;
 
     QMap<int, QPushButton *> m_touchedButtons;
+
+    void updateLayout(QSize sz);
 };
 
 #endif // KEYBOARDWIDGET_H

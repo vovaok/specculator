@@ -37,24 +37,41 @@ MainWindow[orient="landscape"] QToolBar
 
 QToolButton
 {
-/*    background-color: #00C;*/
     height: 1.5em;
     width: 2em;
+/*    min-width: 1.5em;*/
     font-size: 24pt;
-    margin: 1px;
+    margin: 2px;
     font-family: 'FontAwesome';
+    border: 2px solid transparent;
+    border-radius: 3px;
+    background-color: transparent;
+}
+
+QToolButton:active
+{
+    color: silver;
+/*    background-color: transparent;*/
 }
 
 QToolButton:hover
 {
     color: white;
-    background-color: #00F;
+/*    background-color: #00F;*/
 }
 
 QToolButton:pressed, QToolButton:checked
 {
     background-color: silver;
     color: #00C;
+    border-color: gray white white gray;
+/*    border-style: inset;*/
+/*    border-width: 2px;*/
+/*    border-color: #999;*/
+}
+
+QToolBarExtension
+{
 }
 
 QPushButton
@@ -93,8 +110,8 @@ TapeWidget QPushButton
 {
     font-family: 'FontAwesome';
     font-size: 12pt;
-    min-height: 1.25em;
-    max-height: 1.25em;
+    min-height: 1.2em;
+    max-height: 1.2em;
     min-width: 2.5em;
 }
 
@@ -111,6 +128,9 @@ QListWidget::item:selected
 
 KeyboardWidget
 {
+    font-size: 30pt;
+    min-height: 5em;
+/*    max-width: 20em;*/
     background-color: qlineargradient(x1:0.5 y1:0.9, x2:1 y2:1, stop:0 transparent, stop:0.59 transparent,
                                       stop:0.6 maroon, stop:0.64 maroon,
                                       stop:0.65 goldenrod, stop:0.69 goldenrod,
@@ -122,6 +142,10 @@ KeyboardWidget
 KeyboardWidget QPushButton
 {
     font-family: 'ZXSpectrum';
+    font-size: 30pt;
+    min-width: 1.5em;
+    max-width: 1.5em;
+    min-height: 0.95em;
 }
 
 QPushButton::pressed
