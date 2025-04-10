@@ -16,12 +16,13 @@ public:
     void updateRegs();
 
 signals:
+    void step();
+    void run();
 
 private:
     Z80 *m_cpu = nullptr;
     QMap<QString, QLineEdit *> m_regEdits;
     QLineEdit *m_bkptEdit;
-
 };
 
 #endif // CPUWIDGET_H

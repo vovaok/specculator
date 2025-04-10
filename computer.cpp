@@ -15,6 +15,15 @@ void Computer::reset()
     m_cpu->reset();
 }
 
+void Computer::pause()
+{
+    if (!m_cpu)
+        return;
+
+    m_running = false;
+    m_cpu->stop();
+}
+
 void Computer::step()
 {
     if (!m_cpu)
@@ -126,6 +135,9 @@ void Computer::run()
     emit powerOn();
 
     reset();
+
+    restoreState();
+
     resume();
 
     QElapsedTimer etimer;
@@ -162,6 +174,8 @@ void Computer::run()
     }
 
     m_running = false;
+
+    saveState();
 
     emit powerOff();
 

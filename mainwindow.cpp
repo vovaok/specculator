@@ -16,6 +16,11 @@ MainWindow::MainWindow(QWidget *parent)
     f.open(QIODevice::ReadOnly);
     QByteArray css = f.readAll();
     f.close();
+
+    int dpi = QGuiApplication::primaryScreen()->logicalDotsPerInch();
+    int fontSizePx = 23 * dpi / 144;
+    css = css.replace("$fontSizePx", QByteArray::number(fontSizePx) + "px");
+
     setStyleSheet(css);
 
     scrWidget = new ScreenWidget();
@@ -46,12 +51,10 @@ MainWindow::MainWindow(QWidget *parent)
     act = m_toolbar->addAction(QChar(0xf021), this, &MainWindow::reset);
     act->setToolTip("Reset");
     act->setShortcut(QKeySequence("F2"));
-    act = m_toolbar->addAction(QChar(0xf2db/*0xf051*//*0xf188*/), this, &MainWindow::step);
+    act = m_toolbar->addAction(QChar(0xf2db/*0xf051*//*0xf188*/), this, &MainWindow::setDebugMode);
     act->setToolTip("Debug");
-    act->setShortcut(QKeySequence("F10"));
-    act = m_toolbar->addAction(QChar(0xf01d), this, &MainWindow::run);
-    act->setToolTip("Run computer");
-    act->setShortcut(QKeySequence("F5"));
+    act->setCheckable(true);
+    m_debugAction = act;
     act = m_toolbar->addAction(QChar(0xf025), tapeWidget, &QWidget::setVisible);
     act->setToolTip("Cassette tape");
     act->setCheckable(true);
@@ -79,6 +82,13 @@ MainWindow::MainWindow(QWidget *parent)
         button->setText(QChar(0xf141));
     }
 
+    connect(cpuWidget, &CpuWidget::step, computer, &Computer::step);
+    connect(cpuWidget, &CpuWidget::run, this, [this]()
+    {
+        setDebugMode(false);
+        m_debugAction->setChecked(false);
+    });
+
     status = new QLabel(scrWidget);
     status->move(4, 0);
     status->setMinimumWidth(400);
@@ -96,7 +106,7 @@ MainWindow::MainWindow(QWidget *parent)
     centralWidget()->setLayout(m_layout);
 
 #if defined(Q_OS_ANDROID)
-    resize(QApplication::desktop()->screenGeometry().size());
+    resize(QGuiApplication::primaryScreen()->geometry().size());// QApplication::desktop()->screenGeometry().size());
 #endif
 
 //    setProperty("orient", "landscape");
@@ -117,18 +127,33 @@ void MainWindow::reset()
     updateScreen();
 }
 
-void MainWindow::step()
+void MainWindow::setDebugMode(bool enabled)
 {
-    computer->step();
-    cpuWidget->show();
-    cpuWidget->updateRegs();
+    if (enabled)
+    {
+        computer->pause();
+        cpuWidget->show();
+        cpuWidget->updateRegs();
+    }
+    else
+    {
+        cpuWidget->hide();
+        computer->resume();
+    }
 }
 
-void MainWindow::run()
-{
-    cpuWidget->hide();
-    computer->resume();
-}
+//void MainWindow::step()
+//{
+//    computer->step();
+//    cpuWidget->show();
+//    cpuWidget->updateRegs();
+//}
+
+//void MainWindow::run()
+//{
+//    cpuWidget->hide();
+//    computer->resume();
+//}
 
 void MainWindow::bindWidgets()
 {
@@ -183,10 +208,11 @@ void MainWindow::resizeEvent(QResizeEvent *e)
         setProperty("orient", "landscape");
 //        keybWidget->hide();
         m_layout->addWidget(tapeWidget, 0, 0);
-        m_layout->addWidget(cpuWidget, 0, 1);
-        m_layout->addWidget(scrWidget, 0, 2);
-        m_layout->addWidget(keybWidget, 1, 0, 1, 3);
-        m_layout->setColumnStretch(2, 1);
+        m_layout->addWidget(scrWidget, 0, 1);
+        m_layout->addWidget(cpuWidget, 0, 2, 2, 1);
+        m_layout->addWidget(keybWidget, 1, 0, 1, 2);
+        m_layout->setColumnStretch(1, 1);
+        m_layout->setColumnStretch(0, 0);
         m_layout->setRowStretch(0, 0);
         removeToolBar(m_toolbar);
         addToolBar(Qt::LeftToolBarArea, m_toolbar);
@@ -198,11 +224,12 @@ void MainWindow::resizeEvent(QResizeEvent *e)
     else
     {
         setProperty("orient", "portrait");
-        m_layout->addWidget(tapeWidget, 1, 0);
-        m_layout->addWidget(cpuWidget, 0, 1, 2, 1);
         m_layout->addWidget(scrWidget, 0, 0);
+        m_layout->addWidget(cpuWidget, 0, 1);
+        m_layout->addWidget(tapeWidget, 1, 0, 1, 2);
         m_layout->addWidget(keybWidget, 2, 0, 1, 2);
-        m_layout->setColumnStretch(2, 0);
+        m_layout->setColumnStretch(1, 0);
+        m_layout->setColumnStretch(0, 1);
         m_layout->setRowStretch(0, 1);
         m_keybAction->setChecked(true);
         keybWidget->show();

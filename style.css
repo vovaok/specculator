@@ -89,7 +89,42 @@ QPushButton
 
 CpuWidget
 {
+    font-size: $fontSizePx;
     max-width: 15em;
+}
+
+CpuWidget *
+{
+    font-size: $fontSizePx;
+}
+
+CpuWidget QPushButton
+{
+    font-family: 'FontAwesome';
+    font-size: 12pt;
+    min-height: 1.2em;
+    max-height: 1.2em;
+    min-width: 3em;
+    max-width: 3em;
+}
+
+CpuWidget QLabel
+{
+    color: silver;
+}
+
+CpuWidget QLineEdit
+{
+    max-width: 3em;
+    min-width: 3em;
+    max-height: 0.9em;
+    background-color: silver;
+    border: none;
+}
+
+CpuWidget #FLAGS, CpuWidget #T
+{
+    max-width: 6.5em;
 }
 
 TapeWidget
@@ -97,13 +132,12 @@ TapeWidget
     width: 26em;
     height: 10em;
     min-width: 26em;
-    font-size: 10pt;
-    background-color: blue;
+    font-size: $fontSizePx;
 }
 
 TapeWidget *
 {
-    font-size: 10pt;
+    font-size: $fontSizePx;
 }
 
 TapeWidget QPushButton

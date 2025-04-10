@@ -30,12 +30,13 @@ public:
     QToolBar *m_toolbar;
     QGridLayout *m_layout;
 
-    QAction *m_tapeAction, *m_keybAction;
+    QAction *m_debugAction, *m_tapeAction, *m_keybAction;
     QToolButton *m_turboBtn;
 
     void reset();
-    void step();
-    void run();
+    void setDebugMode(bool enabled);
+//    void step();
+//    void run();
 
     void bindWidgets();
     void unbindWidgets();

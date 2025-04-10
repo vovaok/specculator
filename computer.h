@@ -17,6 +17,7 @@ public:
     explicit Computer(QObject *parent = nullptr);
 
     void reset();
+    void pause();
     void step();
     void resume(); // ex run()
 

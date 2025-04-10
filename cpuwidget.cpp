@@ -1,27 +1,59 @@
 #include "cpuwidget.h"
 #include <QFormLayout>
 #include <QFontDatabase>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QDebug>
+#include <QPushButton>
+#include <QLabel>
 
 CpuWidget::CpuWidget(QWidget *parent) : QGroupBox("CPU", parent)
 {
     setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
     QFormLayout *reglay = new QFormLayout;
-    QStringList regNames = {"FLAGS", "AF", "BC", "DE", "HL", "AF'", "BC'", "DE'", "HL'",
-                            "PC", "SP", "IX", "IY", "I", "R", "IM", "IFF1", "IFF2", "T"};
+
+    QPushButton *stepBtn = new QPushButton(QChar(0xf051));
+    stepBtn->setShortcut(QKeySequence("F10"));
+    stepBtn->setToolTip("Step into");
+    connect(stepBtn, &QPushButton::clicked, this, [this]()
+    {
+        emit step();
+        updateRegs();
+    });
+
+    QPushButton *runBtn = new QPushButton(QChar(0xf144));
+    runBtn->setShortcut(QKeySequence("F5"));
+    runBtn->setToolTip("Run");
+    connect(runBtn, &QPushButton::clicked, this, &CpuWidget::run);
+
+    reglay->addRow(stepBtn, runBtn);
+
+    QStringList regNames = {"T", "FLAGS", "AF", "BC", "DE", "HL", "AF'", "BC'", "DE'", "HL'",
+                            "PC", "SP", "IX", "IY", "I", "R", "IM", "IFF1", "IFF2"};
     for (const QString &name: regNames)
     {
         QLineEdit *edit = new QLineEdit;
         edit->setAlignment(Qt::AlignRight);
-        edit->setFixedWidth(80);
         edit->setReadOnly(true);
+        edit->setObjectName(name);
         m_regEdits[name] = edit;
-        reglay->addRow(name, edit);
+        if (name == "T")
+        {
+            reglay->addRow(new QLabel("CYCLES:"));
+            reglay->addRow(edit);
+        }
+        else if (name == "FLAGS")
+        {
+            reglay->addRow(new QLabel("FLAGS:"));
+            reglay->addRow(edit);
+        }
+        else
+            reglay->addRow(name, edit);
     }
 
     m_bkptEdit = new QLineEdit("0000");
     m_bkptEdit->setAlignment(Qt::AlignRight);
-    m_bkptEdit->setFixedWidth(48);
     connect(m_bkptEdit, &QLineEdit::textChanged, [this]()
     {
         m_bkptEdit->setStyleSheet("background-color: yellow;");

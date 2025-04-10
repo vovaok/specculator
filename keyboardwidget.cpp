@@ -13,6 +13,7 @@ KeyboardWidget::KeyboardWidget(QWidget *parent)
 {
     setAttribute(Qt::WA_StyledBackground);
     setAttribute(Qt::WA_AcceptTouchEvents, true);
+    setFocusPolicy(Qt::NoFocus);
 
     m_keys = QStringList{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
                          "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
@@ -22,6 +23,7 @@ KeyboardWidget::KeyboardWidget(QWidget *parent)
     for (int i=0; i<40; i++)
     {
         QPushButton *btn = new QPushButton(m_keys[i], this);
+        btn->setFocusPolicy(Qt::NoFocus);
         int port = m_keymap[i] >> 5;
         int pin = m_keymap[i] & 0x1F;
 
