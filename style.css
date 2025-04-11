@@ -1,8 +1,7 @@
 QWidget
 {
 color: silver;
-/*font-family: 'Consolas', 'Monospace';*/
-font-family: 'ZX Sinclair for Desktop';
+font-family: 'ZxSpectrumRU';
 }
 
 MainWindow
@@ -90,7 +89,7 @@ QPushButton
 CpuWidget
 {
     font-size: $fontSizePx;
-    max-width: 15em;
+    max-width: 12em;
 }
 
 CpuWidget *
@@ -115,23 +114,23 @@ CpuWidget QLabel
 
 CpuWidget QLineEdit
 {
-    max-width: 3em;
-    min-width: 3em;
-    max-height: 0.9em;
+/*    max-width: 4em;*/
+/*    min-width: 4em;*/
+    max-height: 1em;
     background-color: silver;
     border: none;
 }
 
 CpuWidget #FLAGS, CpuWidget #T
 {
-    max-width: 6.5em;
+/*    max-width: 8em;*/
 }
 
 TapeWidget
 {
-    width: 26em;
+    width: 32em;
     height: 10em;
-    min-width: 26em;
+    min-width: 37em;
     font-size: $fontSizePx;
 }
 
@@ -140,18 +139,39 @@ TapeWidget *
     font-size: $fontSizePx;
 }
 
+TapeWidget QLabel
+{
+    border: 1px solid silver;
+    border-color: gray white white gray;
+}
+
 TapeWidget QPushButton
 {
     font-family: 'FontAwesome';
     font-size: 12pt;
     min-height: 1.2em;
-    max-height: 1.2em;
+    max-height: 1.5em;
     min-width: 2.5em;
+    max-width: 2.5em;
 }
 
 QListWidget
 {
+    font-size: $fontSizePx;
+    min-height: 12em;
     background-color: silver;
+    border: 1px solid silver;
+    border-color: gray white white gray;
+}
+
+QListWidget::item
+{
+/*    border-bottom: 1px solid black;*/
+}
+
+QListWidget::item:alternate
+{
+    background-color: #cc0;
 }
 
 QListWidget::item:selected
@@ -200,4 +220,5 @@ QListWidget
 QLabel
 {
     color: white;
+    font-size: $fontSizePx;
 }

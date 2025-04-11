@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     QFontDatabase::addApplicationFont(":/res/fonts/zxspectr.ttf");
-    QFontDatabase::addApplicationFont(":/res/fonts/ZXDTPSi.ttf");
+    QFontDatabase::addApplicationFont(":/res/fonts/ZxSpectrumRU.ttf");
     QFontDatabase::addApplicationFont(":/res/fonts/fontawesome-webfont.ttf");
 
     QFile f(":/style.css");
@@ -18,8 +18,9 @@ MainWindow::MainWindow(QWidget *parent)
     f.close();
 
     int dpi = QGuiApplication::primaryScreen()->logicalDotsPerInch();
-    int fontSizePx = 23 * dpi / 144;
+    int fontSizePx = 8 * ((dpi + 36) / 72);
     css = css.replace("$fontSizePx", QByteArray::number(fontSizePx) + "px");
+    qApp->setProperty("fontSizePx", fontSizePx);
 
     setStyleSheet(css);
 
@@ -106,7 +107,7 @@ MainWindow::MainWindow(QWidget *parent)
     centralWidget()->setLayout(m_layout);
 
 #if defined(Q_OS_ANDROID)
-    resize(QGuiApplication::primaryScreen()->geometry().size());// QApplication::desktop()->screenGeometry().size());
+    resize(QGuiApplication::primaryScreen()->geometry().size());
 #endif
 
 //    setProperty("orient", "landscape");

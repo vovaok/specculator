@@ -84,11 +84,12 @@ private:
 
         QString toString() const
         {
-            return QString("%1: %2 (len=%3)").arg(type()).arg(name()).arg(dataLength);
+            return QString("%1: %2").arg(type()).arg(name());
         }
     };
 
     void openTap(QString filename);
+    QString getFileBaseName(QString filename);
     void updateBlocks();
     void onStateChange();
 

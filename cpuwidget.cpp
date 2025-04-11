@@ -9,7 +9,8 @@
 
 CpuWidget::CpuWidget(QWidget *parent) : QGroupBox("CPU", parent)
 {
-    setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+//    setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    int fontSizePx = qApp->property("fontSizePx").toInt();
 
     QFormLayout *reglay = new QFormLayout;
 
@@ -34,6 +35,7 @@ CpuWidget::CpuWidget(QWidget *parent) : QGroupBox("CPU", parent)
     for (const QString &name: regNames)
     {
         QLineEdit *edit = new QLineEdit;
+//        edit->setFixedWidth(fontSizePx * 4 + 8);
         edit->setAlignment(Qt::AlignRight);
         edit->setReadOnly(true);
         edit->setObjectName(name);
@@ -42,14 +44,19 @@ CpuWidget::CpuWidget(QWidget *parent) : QGroupBox("CPU", parent)
         {
             reglay->addRow(new QLabel("CYCLES:"));
             reglay->addRow(edit);
+//            edit->setFixedWidth(fontSizePx * 8 + 8);
         }
         else if (name == "FLAGS")
         {
             reglay->addRow(new QLabel("FLAGS:"));
             reglay->addRow(edit);
+//            edit->setFixedWidth(fontSizePx * 8 + 8);
         }
         else
+        {
+            edit->setFixedWidth(fontSizePx * 4 + 8);
             reglay->addRow(name, edit);
+        }
     }
 
     m_bkptEdit = new QLineEdit("0000");

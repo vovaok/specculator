@@ -3,22 +3,40 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QScroller>
+
+#if defined(Q_OS_ANDROID)
+#include <QtAndroidExtras/QAndroidJniEnvironment>
+#include <QtAndroidExtras/QAndroidJniObject>
+#include <QtAndroidExtras/QtAndroid>
+#endif
 
 TapeWidget::TapeWidget(QWidget *parent)
     : QWidget{parent}
 {
-    setStyleSheet("/*QListWidget {min-width: 16em;} */QPushButton {max-width: 2em; max-height: 1.5em;}");
-//    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    setStyleSheet("QPushButton {}");
+    int fontSizePx = qApp->property("fontSizePx").toInt();
 
-    (m_openBtn = new QPushButton(QChar(0xF07C)))->setToolTip("Open tape");
-    (m_copyBtn = new QPushButton(QChar(0xF0C5)))->setToolTip("Copy tape");
+    (m_openBtn = new QPushButton(QChar(0xf052/*0xF07C*/)))->setToolTip("Open tape");
+    (m_copyBtn = new QPushButton(QChar(0xf0c5)))->setToolTip("Copy tape");
     m_tapeLabel = new QLabel();
 
     m_list = new QListWidget;
+    m_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+//    m_list->setAlternatingRowColors(true);
     m_label = new QLabel;
     m_label->hide();
     m_progress = new QProgressBar;
     m_progress->hide();
+
+    QScroller *scroller = QScroller::scroller(m_list);
+    QScrollerProperties scrprops;
+    scrprops.setScrollMetric(QScrollerProperties::VerticalOvershootPolicy, QScrollerProperties::OvershootAlwaysOff);
+    scroller->setSnapPositionsY(0, fontSizePx * 2);
+    scroller->setScrollerProperties(scrprops);
+    scroller->grabGesture(m_list, QScroller::LeftMouseButtonGesture);
 
     (m_playBtn = new QPushButton(QChar(0xF04B)))->setToolTip("Play");
     (m_stopBtn = new QPushButton(QChar(0xF04D)))->setToolTip("Stop");
@@ -28,17 +46,19 @@ TapeWidget::TapeWidget(QWidget *parent)
     (m_delBtn = new QPushButton(QChar(0xF014)))->setToolTip("Delete block");
 
     QHBoxLayout *tapelay = new QHBoxLayout;
-    tapelay->addWidget(m_tapeLabel);
     tapelay->addWidget(m_openBtn);
+    tapelay->addWidget(m_tapeLabel);
     tapelay->addWidget(m_copyBtn);
 
     QHBoxLayout *btnlay = new QHBoxLayout;
+    btnlay->addStretch(1);
     btnlay->addWidget(m_stopBtn);
     btnlay->addWidget(m_playBtn);
     btnlay->addWidget(m_recBtn);
     btnlay->addWidget(m_upBtn);
     btnlay->addWidget(m_downBtn);
     btnlay->addWidget(m_delBtn);
+    btnlay->addStretch(1);
 
     QVBoxLayout *lay = new QVBoxLayout;
     setLayout(lay);
@@ -58,9 +78,12 @@ TapeWidget::TapeWidget(QWidget *parent)
         if (!m_tape)
             return;
         QString filename = QFileDialog::getSaveFileName(nullptr, "Copy tape", QString(), "Tape (*.tap, *.TAP)");
-        m_tape->m_filename = filename;
-        m_tape->saveTap();
-        openTap(filename);
+        if (!filename.isEmpty())
+        {
+            m_tape->m_filename = filename;
+            m_tape->saveTap();
+            openTap(filename);
+        }
     });
 
     connect(m_stopBtn, &QPushButton::clicked, this, [this](){if (m_tape) m_tape->stop();});
@@ -78,7 +101,9 @@ void TapeWidget::bindTape(ZxTape *tape)
     m_tape = tape;
 
     QSettings sets;
-    open(sets.value("tapeFile", "cassette.TAP").toString());
+    QString filename = sets.value("tapeFile", "cassette.TAP").toString();
+//    qDebug() << "sets TAP" << filename;
+    openTap(filename);
 }
 
 void TapeWidget::open(QString filename)
@@ -95,9 +120,81 @@ void TapeWidget::openTap(QString filename)
         return;
     m_tape->openTap(filename);
     updateBlocks();
-    m_tapeLabel->setText("Tape: " + QFileInfo(filename).baseName());
+    m_tapeLabel->setText("Tape: " + getFileBaseName(filename));
     QSettings sets;
     sets.setValue("tapeFile", filename);
+}
+
+QString TapeWidget::getFileBaseName(QString filename)
+{
+#if defined(Q_OS_ANDROID)
+    QUrl uri(filename);
+    if (uri.scheme() == "content")
+    {
+        QAndroidJniEnvironment env;
+        QString fileName;
+
+        // 1. Получаем ContentResolver
+        QAndroidJniObject context = QtAndroid::androidContext();
+        QAndroidJniObject contentResolver = context.callObjectMethod(
+            "getContentResolver",
+            "()Landroid/content/ContentResolver;"
+            );
+
+        // 2. Парсим URI
+        QAndroidJniObject jsUri = QAndroidJniObject::callStaticObjectMethod(
+            "android/net/Uri",
+            "parse",
+            "(Ljava/lang/String;)Landroid/net/Uri;",
+            QAndroidJniObject::fromString(uri.toString()).object<jstring>()
+            );
+
+        // 3. Запрашиваем Cursor (используем колонку DISPLAY_NAME)
+        QAndroidJniObject cursor = contentResolver.callObjectMethod(
+            "query",
+            "(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;",
+            jsUri.object(),
+            nullptr, // projection (null = все колонки)
+            nullptr, // selection
+            nullptr, // selectionArgs
+            nullptr  // sortOrder
+            );
+
+        // 4. Проверяем, есть ли данные в Cursor
+        if (cursor.isValid()) {
+            if (cursor.callMethod<jboolean>("moveToFirst", "()Z")) {
+                // 5. Получаем индекс колонки DISPLAY_NAME
+                jint columnIndex = cursor.callMethod<jint>(
+                    "getColumnIndex",
+                    "(Ljava/lang/String;)I",
+                    QAndroidJniObject::getStaticObjectField<jstring>(
+                        "android/provider/OpenableColumns",
+                        "DISPLAY_NAME"
+                        ).object()
+                    );
+
+                // 6. Извлекаем имя файла
+                QAndroidJniObject jsFileName = cursor.callObjectMethod(
+                    "getString",
+                    "(I)Ljava/lang/String;",
+                    columnIndex
+                    );
+                fileName = jsFileName.toString();
+            }
+            // 7. Закрываем Cursor
+            cursor.callMethod<void>("close", "()V");
+        }
+
+        // 8. Проверяем ошибки JNI
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+            qWarning() << "JNI Exception while getting filename from Content URI";
+        }
+
+        return fileName;
+    }
+#endif
+    return QFileInfo(filename).baseName();
 }
 
 void TapeWidget::updateState()
@@ -170,20 +267,37 @@ void TapeWidget::updateBlocks()
         uint16_t len = *reinterpret_cast<const uint16_t *>(ptr);
         ptr += 2;
         QString text;
-        if (*ptr == 0x00 && len == 19)
+        bool eat_block = true;
+        if (*ptr == 0x00)
         {
             const TapHeader *hdr = reinterpret_cast<const TapHeader*>(ptr);
             ptr += len;
             len = *reinterpret_cast<const uint16_t *>(ptr);
+            text = hdr->toString() + "\n";
             if (len == hdr->dataLength + 2) // eat next block if we're parsing its header now
-                ptr += len + 2;
-            text = hdr->toString();
+            {
+                ptr += 2;
+            }
+            else
+            {
+                eat_block = false;
+            }
         }
         else
         {
-            ptr += len;
-            text = QString("Block (len=%1)").arg(len);
+            text = "Block\n";
         }
+
+        if (eat_block)
+        {
+            ptr += len;
+            text += QString("\t(%1 bytes)").arg(len - 2);
+        }
+        else
+        {
+            text += "\t(no data)";
+        }
+
         int blockLen = (ptr - begin) - blockOffset;
 
         QListWidgetItem *item = new QListWidgetItem(/*icon,*/ text, m_list);
