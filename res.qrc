@@ -8,5 +8,6 @@
         <file>res/fonts/zxspectr.ttf</file>
         <file>res/fonts/fontawesome-webfont.ttf</file>
         <file>res/fonts/ZxSpectrumRU.ttf</file>
+        <file>res/fonts/OldSchoolIcons.ttf</file>
     </qresource>
 </RCC>

@@ -9,6 +9,18 @@ MainWindow
     background-color: black;
 }
 
+QMenu
+{
+    background-color: black;
+    border: 2px solid ridge;
+}
+
+QMenu::item:selected
+{
+    background-color: silver;
+    color: #00C;
+}
+
 QToolBar
 {
     border: none;
@@ -37,11 +49,13 @@ MainWindow[orient="landscape"] QToolBar
 QToolButton
 {
     height: 1.5em;
-    width: 2em;
+    width: 1.7em;
 /*    min-width: 1.5em;*/
     font-size: 24pt;
     margin: 2px;
-    font-family: 'FontAwesome';
+    padding-left: 0.3em;
+/*    font-family: 'FontAwesome';*/
+    font-family: 'OldSchoolIcons';
     border: 2px solid transparent;
     border-radius: 3px;
     background-color: transparent;

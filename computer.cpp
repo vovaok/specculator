@@ -44,13 +44,14 @@ void Computer::resume()
     m_cpu->run();
 }
 
-void Computer::saveState()
+void Computer::saveState(QString path)
 {
     if (!m_cpu)
         return;
 
+    bool tmp = m_running;
     m_running = false;
-    QFile f("snap.z80");
+    QFile f(path);
     if (f.open(QIODevice::WriteOnly))
     {
         f.write(reinterpret_cast<const char *>(m_mem), 0x10000); /// @todo ZxMemory class
@@ -59,16 +60,17 @@ void Computer::saveState()
         out << m_port254;
         f.close();
     }
-    m_running = true;
+    m_running = tmp;
 }
 
-void Computer::restoreState()
+void Computer::restoreState(QString path)
 {
     if (!m_cpu)
         return;
 
+    bool tmp = m_running;
     m_running = false;
-    QFile f("snap.z80");
+    QFile f(path);
     if (f.open(QIODevice::ReadOnly))
     {
         f.read(reinterpret_cast<char *>(m_mem), 0x10000); /// @todo ZxMemory class
@@ -77,7 +79,7 @@ void Computer::restoreState()
         in >> m_port254;
         f.close();
     }
-    m_running = true;
+    m_running = tmp;
 }
 
 void Computer::run()
@@ -136,7 +138,7 @@ void Computer::run()
 
     reset();
 
-    restoreState();
+    restoreState("autosave.snap");
 
     resume();
 
@@ -163,19 +165,19 @@ void Computer::run()
 
         if (m_saveState)
         {
-            saveState();
+            saveState(m_snapshotFilename);
             m_saveState = false;
         }
         if (m_restoreState)
         {
-            restoreState();
+            restoreState(m_snapshotFilename);
             m_restoreState = false;
         }
     }
 
     m_running = false;
 
-    saveState();
+    saveState("autosave.snap");
 
     emit powerOff();
 

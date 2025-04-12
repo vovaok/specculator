@@ -32,6 +32,7 @@ public:
     ZxTape      *tape()     {return m_tap;}
     ZxBeeper    *beeper()   {return m_beeper;}
 
+    void setSnapshotFilename(QString path);
     void save() {m_saveState = true;}
     void restore() {m_restoreState = true;}
 
@@ -67,10 +68,11 @@ private:
     void doStep();
 
     /// @todo use thread messaging
+    QString m_snapshotFilename = "0.snap";
     bool m_saveState = false;
     bool m_restoreState = false;
-    void saveState();
-    void restoreState();
+    void saveState(QString path);
+    void restoreState(QString path);
 
     template<typename T>
     void safeDelete(T *&x);
