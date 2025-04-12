@@ -93,18 +93,19 @@ void Computer::run()
         {
             if (port == 0xFE)
                 m_port254 = data;
-//            else
-//                qDebug() << "WR" << Qt::hex << addr << "<-" << data;
         }
         else
-        {
+        {           
             if (port == 0xFE)
-                data = m_keyb->readKeys(addr >> 8); // data.bit6 = mafon;
-            else
             {
-                data = 0xFF;
-//                qDebug() << "RD" << Qt::hex << addr << "->" << data;
+                data = m_keyb->readKeys(addr >> 8); // data.bit6 = mafon;
+                if (m_joy)
+                    data &= m_joy->readKeys(addr >> 8);
             }
+            else if ((port & 0x1F) == 0x1F && m_joy)
+                data = m_joy->readKempston();
+            else
+                data = 0xFF;
         }
     };
 
@@ -131,6 +132,8 @@ void Computer::run()
     m_tap->bindRecPort(&m_port254);
 
     m_beeper = new ZxBeeper(&m_port254);
+
+    m_joy = new ZxJoystick();
 
 //    cpu->test();
 
@@ -185,6 +188,7 @@ void Computer::run()
     safeDelete(m_keyb);
     safeDelete(m_tap);
     safeDelete(m_beeper);
+    safeDelete(m_joy);
     safeDelete(m_cpu);
     delete [] m_mem;
 }

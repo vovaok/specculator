@@ -38,6 +38,9 @@ MainWindow::MainWindow(QWidget *parent)
     keybWidget = new KeyboardWidget;
     keybWidget->hide();
 
+    joyWidget = new JoystickWidget;
+    joyWidget->hide();
+
     computer = new Computer();
     connect(computer, &Computer::powerOn, this, &MainWindow::bindWidgets);
     connect(computer, &Computer::powerOff, this, &MainWindow::unbindWidgets, Qt::DirectConnection);
@@ -61,19 +64,34 @@ MainWindow::MainWindow(QWidget *parent)
     act->setToolTip("Cassette tape");
     act->setCheckable(true);
     m_tapeAction = act;
-    act = m_toolbar->addAction("J"/*QChar(0xf025)*/);//, joyWidget, &QWidget::setVisible);
+    act = m_toolbar->addAction("J"/*QChar(0xf025)*/, joyWidget, &QWidget::setVisible);
     act->setToolTip("Joystick");
     act->setCheckable(true);
+    QMenu *joyMenu = new QMenu("Joystick", m_toolbar);
+    act->setMenu(joyMenu);
+    QActionGroup *joyTypeGroup = new QActionGroup(joyMenu);
+    joyTypeGroup->addAction(
+        joyMenu->addAction("Kempston", [=](){joyWidget->setJoystickType(ZxJoystick::Kempston);}));
+    joyTypeGroup->addAction(
+        joyMenu->addAction("Sinclair", [=](){joyWidget->setJoystickType(ZxJoystick::Sinclair);}));
+    joyTypeGroup->addAction(
+        joyMenu->addAction("Cursor", [=](){joyWidget->setJoystickType(ZxJoystick::Cursor);}));
+    joyTypeGroup->addAction(
+        joyMenu->addAction("Interface II", [=](){joyWidget->setJoystickType(ZxJoystick::InterfaceII);}));
+    for (QAction *a: joyTypeGroup->actions())
+        a->setCheckable(true);
+    joyTypeGroup->actions()[0]->setChecked(true);
     act = m_toolbar->addAction("K"/*QChar(0xf11c)*/, keybWidget, &QWidget::setVisible);
     act->setToolTip("ZX keyboard");
     act->setCheckable(true);
     m_keybAction = act;
     QToolButton *snapshotBtn = new QToolButton();
     snapshotBtn->setText("P");//QChar(0xf0c7));
+    snapshotBtn->setToolTip("Take snapshot");
     snapshotBtn->setCheckable(true);
     m_toolbar->addWidget(snapshotBtn);
 //    act = m_toolbar->addAction(QChar(0xf0c7));//, [=](){});
-    QMenu *menu = new QMenu("Snapshot", snapshotBtn);
+    QMenu *menu = new QMenu("Snapshot", m_toolbar);
     snapshotBtn->setMenu(menu);
     connect(snapshotBtn, &QToolButton::pressed, snapshotBtn, &QToolButton::showMenu);
     connect(menu, &QMenu::aboutToShow, computer, &Computer::pause);
@@ -91,7 +109,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    act = m_toolbar->addAction(QChar(0xf135), computer, &Computer::restore);
 //    act->setToolTip("Turbo");
 
-    if(QToolButton *button = m_toolbar->findChild<QToolButton *>("qt_toolbar_ext_button"))
+    if (QToolButton *button = m_toolbar->findChild<QToolButton *>("qt_toolbar_ext_button"))
     {
         button->setToolButtonStyle(Qt::ToolButtonTextOnly);
         button->setText(QChar(0xf141));
@@ -104,9 +122,10 @@ MainWindow::MainWindow(QWidget *parent)
         m_debugAction->setChecked(false);
     });
 
-    status = new QLabel(scrWidget);
-    status->move(4, 0);
-    status->setMinimumWidth(400);
+    status = new QLabel();
+    dynamic_cast<QVBoxLayout*>(scrWidget->layout())->addWidget(status, 0, Qt::AlignTop | Qt::AlignRight);
+//    status->move(4, 0);
+//    status->setMinimumWidth(400);
 
     setContentsMargins(0, 0, 0, 0);
     m_layout = new QGridLayout;
@@ -116,6 +135,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_layout->addWidget(cpuWidget, 0, 1);
     m_layout->addWidget(scrWidget, 0, 2);
     m_layout->addWidget(keybWidget, 1, 0, 1, 3);
+    m_layout->addWidget(joyWidget, 2, 0, 1, 3);
 
     setCentralWidget(new QWidget());
     centralWidget()->setLayout(m_layout);
@@ -176,6 +196,7 @@ void MainWindow::bindWidgets()
     cpuWidget->bindCpu(computer->cpu());
     tapeWidget->bindTape(computer->tape());
     keybWidget->bindKeyboard(computer->keyboard());
+    joyWidget->bindJoystick(computer->joystick());
 }
 
 void MainWindow::unbindWidgets()
@@ -184,6 +205,7 @@ void MainWindow::unbindWidgets()
     cpuWidget->bindCpu(nullptr);
     tapeWidget->bindTape(nullptr);
     keybWidget->bindKeyboard(nullptr);
+    joyWidget->bindJoystick(nullptr);
 }
 
 void MainWindow::updateScreen()
@@ -224,8 +246,16 @@ void MainWindow::resizeEvent(QResizeEvent *e)
 //        keybWidget->hide();
         m_layout->addWidget(tapeWidget, 0, 0);
         m_layout->addWidget(scrWidget, 0, 1);
-        m_layout->addWidget(cpuWidget, 0, 2, 2, 1);
+        m_layout->addWidget(cpuWidget, 0, 2, 3, 1);
         m_layout->addWidget(keybWidget, 1, 0, 1, 2);
+
+        m_layout->removeWidget(joyWidget);
+        joyWidget->setParent(this);
+        joyWidget->move(0 * m_toolbar->width(), 0);
+        QSize sz = e->size();
+        sz.rwidth() -= joyWidget->x();
+        joyWidget->resize(sz);
+
         m_layout->setColumnStretch(1, 1);
         m_layout->setColumnStretch(0, 0);
         m_layout->setRowStretch(0, 0);
@@ -241,8 +271,11 @@ void MainWindow::resizeEvent(QResizeEvent *e)
         setProperty("orient", "portrait");
         m_layout->addWidget(scrWidget, 0, 0);
         m_layout->addWidget(cpuWidget, 0, 1);
-        m_layout->addWidget(tapeWidget, 1, 0, 1, 2);
-        m_layout->addWidget(keybWidget, 2, 0, 1, 2);
+        m_layout->addWidget(joyWidget, 1, 0, 1, 2);
+        m_layout->addWidget(tapeWidget, 2, 0, 1, 2);
+        m_layout->addWidget(keybWidget, 3, 0, 1, 2);
+//        m_layout->addWidget(joyWidget, 3, 0, 1, 2);
+
         m_layout->setColumnStretch(1, 0);
         m_layout->setColumnStretch(0, 1);
         m_layout->setRowStretch(0, 1);

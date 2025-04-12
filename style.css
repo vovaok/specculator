@@ -12,13 +12,37 @@ MainWindow
 QMenu
 {
     background-color: black;
-    border: 2px solid ridge;
+    border: 2px solid silver;
+}
+
+QMenu::item
+{
+    padding: .5em;
 }
 
 QMenu::item:selected
 {
+    color: white;
+}
+
+QMenu::item:checked
+{
     background-color: silver;
     color: #00C;
+}
+
+QMenu::indicator
+{
+    width: 1em;
+    margin: 0 1em;
+/*    padding: -4px;*/
+}
+
+QMenu::indicator:exclusive:checked
+{
+/*    image: url(:/images/radiobutton_checked.png);*/
+    background-color: #00c;
+    padding: .5em 0;
 }
 
 QToolBar
@@ -142,7 +166,7 @@ CpuWidget #FLAGS, CpuWidget #T
 
 TapeWidget
 {
-    width: 32em;
+    width: 26em;
     height: 10em;
     min-width: 37em;
     font-size: $fontSizePx;
@@ -216,7 +240,7 @@ KeyboardWidget QPushButton
 /*    min-height: 0.95em;*/
 }
 
-QPushButton::pressed
+QPushButton:pressed
 {
     background-color: qlineargradient(x1:0 y1:0, x2:0 y2:1, stop:0 #404040, stop:1 gray);
 }
@@ -235,4 +259,53 @@ QLabel
 {
     color: white;
     font-size: $fontSizePx;
+}
+
+JoystickWidget *
+{
+    font-size: 24pt;
+    font-family: 'FontAwesome';
+}
+
+JoystickWidget #pad
+{
+    border: 1px solid black;
+    min-width: 6em;
+    max-width: 6em;
+    min-height: 6em;
+    max-height: 6em;
+    border-radius: 3em;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+JoystickWidget #fire
+{
+    min-height: 6em;
+    max-height: 6em;
+}
+
+JoystickWidget #pad QPushButton
+{
+    min-width: 2em;
+    max-width: 2em;
+    min-height: 2em;
+    max-height: 2em;
+    border-radius: 1em;
+    background-color: transparent;
+}
+
+JoystickWidget #fire QPushButton
+{
+    min-width: 3em;
+    max-width: 3em;
+    min-height: 3em;
+    max-height: 3em;
+    border-radius: 1.5em;
+    border: 1px solid black;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+#fire>QPushButton:pressed, #pad>QPushButton:pressed
+{
+    background-color: rgba(0, 0, 0, 0.25);
 }

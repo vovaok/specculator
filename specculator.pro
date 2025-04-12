@@ -1,4 +1,4 @@
-QT       += core gui multimedia
+QT       += core gui multimedia gamepad
 
 android: {
     QT += androidextras
@@ -22,6 +22,7 @@ win32: {
 SOURCES += \
     computer.cpp \
     cpuwidget.cpp \
+    joystickwidget.cpp \
     keyboardwidget.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -32,6 +33,7 @@ SOURCES += \
     z80_alu.cpp \
     z80_blockcmd.cpp \
     zxbeeper.cpp \
+    zxjoystick.cpp \
     zxkeyboard.cpp \
     zxscreen.cpp \
     zxtape.cpp
@@ -39,6 +41,7 @@ SOURCES += \
 HEADERS += \
     computer.h \
     cpuwidget.h \
+    joystickwidget.h \
     keyboardwidget.h \
     mainwindow.h \
     screenwidget.h \
@@ -46,6 +49,7 @@ HEADERS += \
     tapewidget.h \
     z80.h \
     zxbeeper.h \
+    zxjoystick.h \
     zxkeyboard.h \
     zxscreen.h \
     zxtape.h

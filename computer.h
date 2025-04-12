@@ -9,6 +9,7 @@
 #include "zxkeyboard.h"
 #include "zxtape.h"
 #include "zxbeeper.h"
+#include "zxjoystick.h"
 
 class Computer : public QThread
 {
@@ -31,6 +32,7 @@ public:
     ZxKeyboard  *keyboard() {return m_keyb;}
     ZxTape      *tape()     {return m_tap;}
     ZxBeeper    *beeper()   {return m_beeper;}
+    ZxJoystick  *joystick() {return m_joy;}
 
     void setSnapshotFilename(QString path);
     void save() {m_saveState = true;}
@@ -53,6 +55,7 @@ private:
     ZxKeyboard *m_keyb = nullptr;
     ZxTape *m_tap = nullptr;
     ZxBeeper *m_beeper = nullptr;
+    ZxJoystick *m_joy = nullptr;
 
     uint8_t m_port254;
     uint8_t m_keyport[8] {0};

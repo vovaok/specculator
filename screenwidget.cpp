@@ -1,9 +1,11 @@
 #include "screenwidget.h"
 #include <QPainter>
+#include <QVBoxLayout>
 
 ScreenWidget::ScreenWidget(QWidget *parent) : QWidget(parent)
 {
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    setLayout(new QVBoxLayout);
 }
 
 void ScreenWidget::bindScreen(ZxScreen *scr)

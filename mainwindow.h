@@ -11,6 +11,7 @@
 #include "cpuwidget.h"
 #include "tapewidget.h"
 #include "keyboardwidget.h"
+#include "joystickwidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -26,6 +27,7 @@ public:
     CpuWidget *cpuWidget = nullptr;
     TapeWidget *tapeWidget = nullptr;
     KeyboardWidget *keybWidget = nullptr;
+    JoystickWidget *joyWidget = nullptr;
     QLabel *status;
     QToolBar *m_toolbar;
     QGridLayout *m_layout;
