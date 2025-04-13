@@ -31,7 +31,7 @@ uint8_t ZxJoystick::readKempston()
         return m_state.byte;
     return 0xFF;
 }
-#include <QDebug>
+
 uint8_t ZxJoystick::readKeys(uint8_t addr)
 {
     uint8_t r = 0;

@@ -67,6 +67,7 @@ MainWindow::MainWindow(QWidget *parent)
     act = m_toolbar->addAction("J"/*QChar(0xf025)*/, joyWidget, &QWidget::setVisible);
     act->setToolTip("Joystick");
     act->setCheckable(true);
+    m_joyAction = act;
     QMenu *joyMenu = new QMenu("Joystick", m_toolbar);
     act->setMenu(joyMenu);
     QActionGroup *joyTypeGroup = new QActionGroup(joyMenu);
@@ -255,6 +256,8 @@ void MainWindow::resizeEvent(QResizeEvent *e)
         QSize sz = e->size();
         sz.rwidth() -= joyWidget->x();
         joyWidget->resize(sz);
+        if (m_joyAction->isChecked())
+            joyWidget->show();
 
         m_layout->setColumnStretch(1, 1);
         m_layout->setColumnStretch(0, 0);

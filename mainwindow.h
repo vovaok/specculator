@@ -32,7 +32,7 @@ public:
     QToolBar *m_toolbar;
     QGridLayout *m_layout;
 
-    QAction *m_debugAction, *m_tapeAction, *m_keybAction;
+    QAction *m_debugAction, *m_tapeAction, *m_keybAction, *m_joyAction;
     QToolButton *m_turboBtn;
 
     void reset();

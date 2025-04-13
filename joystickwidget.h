@@ -2,6 +2,7 @@
 #define JOYSTICKWIDGET_H
 
 #include <QWidget>
+#include <QPushButton>
 #include <QTouchEvent>
 #include "zxjoystick.h"
 
@@ -17,14 +18,15 @@ protected:
     virtual bool event(QEvent *event) override;
     virtual void resizeEvent(QResizeEvent *e) override;
     void touchEvent(QTouchEvent *e);
-    virtual void paintEvent(QPaintEvent *event) override;
+//    virtual void paintEvent(QPaintEvent *event) override;
 
 signals:
 
 private:
     ZxJoystick *m_joy = nullptr;
-    QPoint m_padPos;
-    QPoint m_firePos;
+    QVector<QPushButton *> m_buttons;
+    QPushButton *m_btnFire;
+    QWidget *m_pad;
 };
 
 #endif // JOYSTICKWIDGET_H
