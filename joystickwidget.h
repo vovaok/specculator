@@ -24,9 +24,17 @@ signals:
 
 private:
     ZxJoystick *m_joy = nullptr;
-    QVector<QPushButton *> m_buttons;
+//    QVector<QPushButton *> m_padButtons;
+    QPushButton *m_btnL;
+    QPushButton *m_btnR;
+    QPushButton *m_btnU;
+    QPushButton *m_btnD;
     QPushButton *m_btnFire;
     QWidget *m_pad;
+    int m_padTouchId = -1;
+    int m_fireTouchId = -1;
+
+    void setButtonState(QPushButton *btn, bool state);
 };
 
 #endif // JOYSTICKWIDGET_H

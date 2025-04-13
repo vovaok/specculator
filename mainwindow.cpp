@@ -13,6 +13,16 @@ MainWindow::MainWindow(QWidget *parent)
     QFontDatabase::addApplicationFont(":/res/fonts/fontawesome-webfont.ttf");
     QFontDatabase::addApplicationFont(":/res/fonts/OldSchoolIcons.ttf");
 
+    auto gamepads = QGamepadManager::instance()->connectedGamepads(); // don't remove this!!
+//        if (gamepads.isEmpty())
+//        {
+//            qDebug() << ("WARNING: No gamepads found");
+//        }
+//        else
+//        {
+//            qDebug() << (QString("Gamepads found: %1").arg(gamepads.size()));
+//        }
+
     QFile f(":/style.css");
     f.open(QIODevice::ReadOnly);
     QByteArray css = f.readAll();
