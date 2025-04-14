@@ -83,8 +83,8 @@ MainWindow::MainWindow(QWidget *parent)
     QActionGroup *joyTypeGroup = new QActionGroup(joyMenu);
     joyTypeGroup->addAction(
         joyMenu->addAction("Kempston", [=](){joyWidget->setJoystickType(ZxJoystick::Kempston);}));
-    joyTypeGroup->addAction(
-        joyMenu->addAction("Sinclair", [=](){joyWidget->setJoystickType(ZxJoystick::Sinclair);}));
+//    joyTypeGroup->addAction(
+//        joyMenu->addAction("Sinclair", [=](){joyWidget->setJoystickType(ZxJoystick::Sinclair);}));
     joyTypeGroup->addAction(
         joyMenu->addAction("Cursor", [=](){joyWidget->setJoystickType(ZxJoystick::Cursor);}));
     joyTypeGroup->addAction(
@@ -102,17 +102,18 @@ MainWindow::MainWindow(QWidget *parent)
     snapshotBtn->setCheckable(true);
     m_toolbar->addWidget(snapshotBtn);
 //    act = m_toolbar->addAction(QChar(0xf0c7));//, [=](){});
-    QMenu *menu = new QMenu("Snapshot", m_toolbar);
-    snapshotBtn->setMenu(menu);
+    QMenu *snapMenu = new QMenu("Snapshot", m_toolbar);
+    snapshotBtn->setMenu(snapMenu);
     connect(snapshotBtn, &QToolButton::pressed, snapshotBtn, &QToolButton::showMenu);
-    connect(menu, &QMenu::aboutToShow, computer, &Computer::pause);
-    connect(menu, &QMenu::aboutToHide, computer, &Computer::resume);
-    act = menu->addAction("Save state"/*QString(QChar(0xf0c7)) + " save state"*/, computer, &Computer::save);
+    connect(snapMenu, &QMenu::aboutToShow, computer, &Computer::pause);
+    connect(snapMenu, &QMenu::aboutToHide, computer, &Computer::resume);
+    act = snapMenu->addAction("Save state"/*QString(QChar(0xf0c7)) + " save state"*/, computer, &Computer::save);
     act->setToolTip("Save state");
     act->setShortcut(QKeySequence("F8"));
-    act = menu->addAction("Restore state"/*QString(QChar(0xf01e/*0xf1da*)) + " restore"*/, computer, &Computer::restore);
+    act = snapMenu->addAction("Restore state"/*QString(QChar(0xf01e/*0xf1da*)) + " restore"*/, computer, &Computer::restore);
     act->setToolTip("Restore state");
     act->setShortcut(QKeySequence("F9"));
+
     m_turboBtn = new QToolButton();
     m_turboBtn->setText("F"/*QChar(0xf135)*/);
     m_turboBtn->setToolTip("Turbo");

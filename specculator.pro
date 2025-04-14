@@ -62,6 +62,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     res.qrc
 
+RC_ICONS = res/pic/icon.ico
+
 #DEFINES += ANDROID_NDK
 #DEFINES += LOG_NDEBUG
 #DEFINES += ACCESS_RAW_DESCRIPTORS

@@ -18,6 +18,7 @@ QMenu
 QMenu::item
 {
     padding: .5em;
+    font-size: $fontSizePx;
 }
 
 QMenu::item:selected
