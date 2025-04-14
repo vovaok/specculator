@@ -131,7 +131,7 @@ void Computer::run()
     m_tap->bindPlayPort(m_keyport + 7);
     m_tap->bindRecPort(&m_port254);
 
-    m_beeper = new ZxBeeper(&m_port254);
+    m_beeper = new ZxBeeper(&m_port254, m_keyport + 7);
 
     m_joy = new ZxJoystick();
 
@@ -229,15 +229,8 @@ void Computer::doStep()
     if (m_tap->isPlaying() || m_tap->isRecording())
         m_tap->update(dt_ns);
 
-//    if (tap->isPlaying())
-//    {
-//        if (m_keyport[7] & 0x40)
-//            port254 |= 0x10;
-//        else
-//            port254 &= ~0x10;
-//    }
-
-    m_beeper->update(dt_ns);
+    if (!turbo)
+        m_beeper->update(dt_ns);
 }
 
 template<typename T>

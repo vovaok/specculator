@@ -84,12 +84,12 @@ bool JoystickWidget::event(QEvent *event)
 #include <QDebug>
 void JoystickWidget::resizeEvent(QResizeEvent *e)
 {
-    QRegion r1(m_pad->rect().translated(m_pad->pos()).adjusted(-2, -2, 2, 2), QRegion::Ellipse);
+    QRegion r1(m_pad->rect().translated(m_pad->pos()).adjusted(-1, -1, 0, 0), QRegion::Ellipse);
 //    qDebug() << m_btnFire->pos() << m_btnFire->rect();
 //    qDebug() << m_btnFire->parentWidget()->pos();
 //    qDebug() << this->pos();
 //    qDebug() << m_btnFire->
-    QRegion r2(m_btnFire->rect().translated(m_btnFire->pos()).adjusted(-1, -1, 2, 2), QRegion::Ellipse);
+    QRegion r2(m_btnFire->rect().translated(m_btnFire->pos()).adjusted(-2, -2, 0, 0), QRegion::Ellipse);
     setMask(r1.united(r2));
 
 //    int w = e->size().width();

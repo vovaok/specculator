@@ -235,10 +235,7 @@ void MainWindow::updateScreen()
     if (keybWidget && keybWidget->isVisible())
         keybWidget->updateState();
 
-//    status->setText(QString("%1").arg(cpu->cyclesCount()));
     status->setText(QString("CPU:%1%").arg(computer->cpuUsage(), 3));
-//    status->setText(QString("%1/%2").arg(run_us).arg(frame_us));
-    //    qDebug() << QString("%1/%2 - %3").arg(run_us).arg(frame_us).arg(NN);
 }
 
 void MainWindow::closeEvent(QCloseEvent *e)

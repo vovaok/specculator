@@ -240,6 +240,12 @@ KeyboardWidget QPushButton
 /*    min-height: 0.95em;*/
 }
 
+KeyboardWidget QPushButton#Space
+{
+    min-width: 2.4em;
+    max-width: 2.4em;
+}
+
 QPushButton:pressed
 {
     background-color: qlineargradient(x1:0 y1:0, x2:0 y2:1, stop:0 #404040, stop:1 gray);

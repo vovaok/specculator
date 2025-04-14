@@ -1,8 +1,9 @@
 #include "zxbeeper.h"
 #include <QDebug>
 
-ZxBeeper::ZxBeeper(uint8_t *port) :
-    m_port(port)
+ZxBeeper::ZxBeeper(uint8_t *port, uint8_t *tapePort) :
+    m_port(port),
+    m_tapePort(tapePort)
 {
     start();
 }
@@ -19,6 +20,16 @@ void ZxBeeper::update(int dt_ns)
 
     m_time_ns += dt_ns;
     int idx = m_time_ns * (m_sampleFreq / 1000) / 1000000;
+
+    qint64 x = ((*m_port & 0x10) << 27) - 1;
+    m_signal += (x - m_signal) * dt_ns * (m_sampleFreq / 1000) / 1000000;
+
+    x = (((*m_port & 0x08) << 19) + ((*m_tapePort & 0x40) << 16)) * m_tapeVolume - 1;
+
+    int fsignal = m_signal - m_avg;
+    fsignal += x;
+    m_avg += fsignal / m_sampleFreq;
+
     if (idx >= m_bufferSize)
     {
         m_buffer = (m_buffer == m_buffer1)? m_buffer2: m_buffer1;
@@ -27,7 +38,7 @@ void ZxBeeper::update(int dt_ns)
     }
     else
     {
-        m_buffer[idx] = (*m_port & 0x10)? 0x7fff: 0x0000;
+        m_buffer[idx] = fsignal >> 16;//static_cast<int>(m_signal * 0x7FFF);
     }
 }
 
