@@ -1,45 +1,15 @@
 #include "zxjoystick.h"
-#include <QDebug>
 
 ZxJoystick::ZxJoystick()
 {
-    QGamepadManager *gpm = QGamepadManager::instance();
-    QObject::connect(gpm, &QGamepadManager::connectedGamepadsChanged, [=]()
-    {
-//        qDebug() << "Physical gamepads:" << gpm->connectedGamepads();
-
-        m_gamepad = new QGamepad(gpm->connectedGamepads().first());
-        qDebug() << m_gamepad->isConnected();
-
-        QObject::connect(m_gamepad, &QGamepad::axisLeftXChanged, [this](double value){
-            m_state.right = (value > 0.3);
-            m_state.left = (value < -0.3);
-        });
-        QObject::connect(m_gamepad, &QGamepad::axisLeftYChanged, [this](double value){
-            m_state.down = (value > 0.3);
-            m_state.up = (value < -0.3);
-        });
-        QObject::connect(m_gamepad, &QGamepad::buttonLeftChanged, [this](bool value){m_state.left = value;});
-        QObject::connect(m_gamepad, &QGamepad::buttonRightChanged, [this](bool value){m_state.right = value;});
-        QObject::connect(m_gamepad, &QGamepad::buttonUpChanged, [this](bool value){m_state.up = value;});
-        QObject::connect(m_gamepad, &QGamepad::buttonDownChanged, [this](bool value){m_state.down = value;});
-        QObject::connect(m_gamepad, &QGamepad::buttonAChanged, [this](bool){
-            m_state.fire = m_gamepad->buttonA() | m_gamepad->buttonB();
-        });
-        QObject::connect(m_gamepad, &QGamepad::buttonBChanged, [this](bool){
-            m_state.fire = m_gamepad->buttonA() | m_gamepad->buttonB();
-        });
-
-
-    });
 }
 
 ZxJoystick::~ZxJoystick()
 {
-    if (m_gamepad)
+    for (QGamepad *gp: m_gamepads)
     {
-        m_gamepad->disconnect();
-        delete m_gamepad;
+        gp->disconnect();
+        gp->deleteLater();
     }
 }
 
@@ -86,4 +56,35 @@ uint8_t ZxJoystick::readKeys(uint8_t addr)
             r |= 0x10;
     }
     return ~r;
+}
+
+void ZxJoystick::connectGamepad(QGamepad *gp)
+{
+    int id = gp->deviceId();
+    if (m_gamepads.contains(id))
+    {
+        m_gamepads[id]->disconnect();
+        m_gamepads[id]->deleteLater();
+    }
+    m_gamepads[id] = gp;
+
+    QObject::connect(gp, &QGamepad::axisLeftXChanged, [this](double value){
+        m_state.right = (value > 0.3);
+        m_state.left = (value < -0.3);
+    });
+    QObject::connect(gp, &QGamepad::axisLeftYChanged, [this](double value){
+        m_state.down = (value > 0.3);
+        m_state.up = (value < -0.3);
+    });
+    QObject::connect(gp, &QGamepad::buttonLeftChanged, [this](bool value){m_state.left = value;});
+    QObject::connect(gp, &QGamepad::buttonRightChanged, [this](bool value){m_state.right = value;});
+    QObject::connect(gp, &QGamepad::buttonUpChanged, [this](bool value){m_state.up = value;});
+    QObject::connect(gp, &QGamepad::buttonDownChanged, [this](bool value){m_state.down = value;});
+    QObject::connect(gp, &QGamepad::buttonAChanged, [this, gp](bool){
+        m_state.fire = gp->buttonA() | gp->buttonB();
+    });
+    QObject::connect(gp, &QGamepad::buttonBChanged, [this, gp](bool){
+        m_state.fire = gp->buttonA() | gp->buttonB();
+    });
+
 }

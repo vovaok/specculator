@@ -209,6 +209,19 @@ void MainWindow::bindWidgets()
     tapeWidget->bindTape(computer->tape());
     keybWidget->bindKeyboard(computer->keyboard());
     joyWidget->bindJoystick(computer->joystick());
+
+    QGamepadManager *gpm = QGamepadManager::instance();
+    auto updateGamepads = [=]()
+    {
+        for (int id: gpm->connectedGamepads())
+        {
+            QGamepad *gp = new QGamepad(id, this);
+            computer->joystick()->connectGamepad(gp);
+        }
+    };
+
+    connect(gpm, &QGamepadManager::connectedGamepadsChanged, updateGamepads);
+    updateGamepads();
 }
 
 void MainWindow::unbindWidgets()
@@ -236,7 +249,8 @@ void MainWindow::updateScreen()
     if (keybWidget && keybWidget->isVisible())
         keybWidget->updateState();
 
-    status->setText(QString("CPU:%1%").arg(computer->cpuUsage(), 3));
+    QString ololo = computer->joystick()->status;
+    status->setText(QString("%2 CPU:%1%").arg(computer->cpuUsage(), 3).arg(ololo));
 }
 
 void MainWindow::closeEvent(QCloseEvent *e)

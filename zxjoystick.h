@@ -24,9 +24,12 @@ public:
     uint8_t readKempston();
     uint8_t readKeys(uint8_t addr);
 
+    QString status;
+    void connectGamepad(QGamepad *gp);
+
 private:
     friend class JoystickWidget;
-    QGamepad *m_gamepad = nullptr;
+    QMap<int, QGamepad *> m_gamepads;
     Type m_type = Kempston;
     union
     {
